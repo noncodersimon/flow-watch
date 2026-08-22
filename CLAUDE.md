@@ -40,6 +40,12 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - Yahoo (yfinance) sometimes rate-limits GitHub runners - ETF flow failures
   are per-instrument and must stay non-fatal.
 - CFTC COT is weekly (Friday publication, Tuesday data).
+- Claude Code web sandboxes block outbound market data. Every source host
+  (Yahoo, CFTC, Alpha Vantage, LSE, Investegate, SEC) returns 403 at the
+  egress proxy; pypi and GitHub are allowed. Adapters therefore cannot be
+  validated against live data in a web session - only in Actions, which has
+  open network. Build parsers so the fetch is a thin, separable layer and
+  the parsing runs against saved fixtures offline.
 
 ## Conventions
 
@@ -52,6 +58,10 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   Safari rendering for UI changes.
 - Run ./check.sh before committing - it does py_compile on the adapters,
   node --check on app.js, and the test suite. Everything must pass.
+- Record meaningful design decisions in the log below - anything a future
+  session might otherwise undo or re-litigate: what was chosen, what was
+  rejected, and why. Routine implementation detail does not belong there.
+  Date each entry and append; do not rewrite past entries, supersede them.
 
 ## Local development
 
@@ -68,6 +78,52 @@ fetch functions are deliberately not tested - they are thin wrappers over live
 APIs, and mocking them would test the mock.
 
 Only adapters need the runtime dependency: pip install -r requirements.txt.
+
+## Design decisions
+
+Append-only. Newest last.
+
+### 2026-08-22 - Scaffolding added, existing code left alone
+The repo already held a working v0.2. Chose to add tooling around it rather
+than restructure anything - no existing file was modified. Rejected: a
+rewrite, which would have thrown away accumulated /data history that cannot
+be re-fetched (Alpha Vantage only serves a recent window on the free tier).
+
+### 2026-08-22 - Tests are stdlib unittest, not pytest
+Zero pip install, so ./check.sh runs anywhere including a cold container.
+Rejected pytest: it is nicer to write, but adding a dev dependency to a
+project whose whole premise is "no build step, one runtime dep" is a poor
+trade at this size.
+
+### 2026-08-22 - Adapter fetch functions are deliberately not tested
+They are thin wrappers over live APIs. Mocking them would assert that the
+mock returns what the mock was told to return. What is tested instead: the
+pure helpers in common.py, and the shape of what actually landed in /data.
+If a fetch function grows real logic, that logic should move into a pure
+function and be tested there.
+
+### 2026-08-22 - CI also runs after the fetch workflow, not just on push
+The adapters commit to the repo unattended on a cron, so a malformed store
+reaches the live site with nobody watching. check.yml therefore triggers on
+workflow_run of "Fetch market data" as well as on push. This is the main
+reason the /data integrity tests exist at all.
+
+### 2026-08-22 - No tests/__init__.py
+Discovery runs with -t tests, so test modules import as top-level and
+"import common" resolves via tests/context.py. Adding __init__.py makes them
+package-relative and breaks running a test file directly. Do not add one.
+
+### 2026-08-22 - SessionStart hook is synchronous and remote-only
+Synchronous so dependencies are guaranteed present before the session starts,
+avoiding a race where tests run before yfinance is installed. Remote-only so
+it never touches a local machine's environment. Async is a one-line change if
+session startup latency becomes annoying.
+
+### 2026-08-22 - data/etf_shares.json was missing because the adapter never ran
+Not a bug. Commit e316a70 shipped an early etf_flows.py; the bot run fa91e5d
+wrote etf_flow.json and etf_flow_pct.json from it. Commit 9233c6b then
+rewrote the adapter to add the shares-outstanding method and the etf_shares
+audit store, and no run has happened since. The next Actions run populates it.
 
 ## Current state (Aug 2026, v0.2)
 

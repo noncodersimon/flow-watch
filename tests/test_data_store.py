@@ -28,6 +28,7 @@ SERIES_METRICS = [
     "cot_percentile",
     "etf_flow",
     "etf_flow_pct",
+    "etf_shares",
 ]
 
 EVENT_KINDS = {"pdmr_buy", "pdmr_sell", "tr1_up", "tr1_down"}
@@ -179,6 +180,13 @@ class SeriesStoreTest(unittest.TestCase):
                 for d, v in points:
                     self.assertGreater(v, 0.0, f"{sid} {d} ratio should be > 0")
 
+    def test_share_counts_are_positive(self):
+        store = load("etf_shares.json")
+        for sid, points in store["series"].items():
+            with self.subTest(instrument=sid):
+                for d, v in points:
+                    self.assertGreater(v, 0.0, f"{sid} {d} share count should be > 0")
+
     def test_cot_series_belong_to_commodities(self):
         commodities = {
             i["id"] for i in self.meta["instruments"] if i["type"] == "commodity"
@@ -190,7 +198,7 @@ class SeriesStoreTest(unittest.TestCase):
 
     def test_etf_flow_series_belong_to_etfs(self):
         etfs = {i["id"] for i in self.meta["instruments"] if i["type"] == "etf"}
-        for metric in ("etf_flow", "etf_flow_pct"):
+        for metric in ("etf_flow", "etf_flow_pct", "etf_shares"):
             store = load(f"{metric}.json")
             with self.subTest(metric=metric):
                 self.assertTrue(set(store["series"]) <= etfs)
