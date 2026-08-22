@@ -1,33 +1,215 @@
 {
-  "version": "0.1",
-  "regions": ["UK", "US", "Global"],
+  "version": "0.2",
+  "regions": [
+    "UK",
+    "US",
+    "Global"
+  ],
   "default_region": "UK",
   "instruments": [
-    { "id": "SHEL.LON",  "name": "Shell",                "type": "equity", "region": "UK", "sector": "Energy",             "currency": "GBX" },
-    { "id": "AZN.LON",   "name": "AstraZeneca",          "type": "equity", "region": "UK", "sector": "Healthcare",         "currency": "GBX" },
-    { "id": "HSBA.LON",  "name": "HSBC",                 "type": "equity", "region": "UK", "sector": "Financials",         "currency": "GBX" },
-    { "id": "ULVR.LON",  "name": "Unilever",             "type": "equity", "region": "UK", "sector": "Consumer Staples",   "currency": "GBX" },
-    { "id": "BP.LON",    "name": "BP",                   "type": "equity", "region": "UK", "sector": "Energy",             "currency": "GBX" },
-    { "id": "GSK.LON",   "name": "GSK",                  "type": "equity", "region": "UK", "sector": "Healthcare",         "currency": "GBX" },
-    { "id": "RIO.LON",   "name": "Rio Tinto",            "type": "equity", "region": "UK", "sector": "Materials",          "currency": "GBX" },
-    { "id": "LSEG.LON",  "name": "London Stock Exchange","type": "equity", "region": "UK", "sector": "Financials",         "currency": "GBX" },
-    { "id": "REL.LON",   "name": "RELX",                 "type": "equity", "region": "UK", "sector": "Industrials",        "currency": "GBX" },
-    { "id": "BARC.LON",  "name": "Barclays",             "type": "equity", "region": "UK", "sector": "Financials",         "currency": "GBX" },
-    { "id": "TSCO.LON",  "name": "Tesco",                "type": "equity", "region": "UK", "sector": "Consumer Staples",   "currency": "GBX" },
-    { "id": "VOD.LON",   "name": "Vodafone",             "type": "equity", "region": "UK", "sector": "Telecoms",           "currency": "GBX" },
-
-    { "id": "VUKE.LON",  "name": "Vanguard FTSE 100 ETF",   "type": "etf", "region": "UK",     "sector": "UK Equity",     "currency": "GBP" },
-    { "id": "VWRL.LON",  "name": "Vanguard All-World ETF",  "type": "etf", "region": "Global", "sector": "Global Equity", "currency": "GBP" },
-    { "id": "VUSA.LON",  "name": "Vanguard S&P 500 ETF",    "type": "etf", "region": "US",     "sector": "US Equity",     "currency": "GBP" },
-    { "id": "SGLN.LON",  "name": "iShares Physical Gold",   "type": "etf", "region": "Global", "sector": "Commodities",   "currency": "GBP" },
-    { "id": "SPY",       "name": "SPDR S&P 500 (US)",       "type": "etf", "region": "US",     "sector": "US Equity",     "currency": "USD" },
-    { "id": "QQQ",       "name": "Invesco QQQ (US)",        "type": "etf", "region": "US",     "sector": "US Tech",       "currency": "USD" },
-
-    { "id": "COT.GOLD",    "name": "Gold futures",        "type": "commodity", "region": "Global", "sector": "Metals",  "currency": "USD", "cftc_code": "088691" },
-    { "id": "COT.SILVER",  "name": "Silver futures",      "type": "commodity", "region": "Global", "sector": "Metals",  "currency": "USD", "cftc_code": "084691" },
-    { "id": "COT.WTI",     "name": "WTI crude futures",   "type": "commodity", "region": "Global", "sector": "Energy",  "currency": "USD", "cftc_code": "067651" },
-    { "id": "COT.NATGAS",  "name": "Natural gas futures", "type": "commodity", "region": "Global", "sector": "Energy",  "currency": "USD", "cftc_code": "023651" },
-    { "id": "COT.COPPER",  "name": "Copper futures",      "type": "commodity", "region": "Global", "sector": "Metals",  "currency": "USD", "cftc_code": "085692" },
-    { "id": "COT.WHEAT",   "name": "Wheat futures (SRW)", "type": "commodity", "region": "Global", "sector": "Grains",  "currency": "USD", "cftc_code": "001602" }
+    {
+      "id": "SHEL.LON",
+      "name": "Shell",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Energy",
+      "currency": "GBX"
+    },
+    {
+      "id": "AZN.LON",
+      "name": "AstraZeneca",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Healthcare",
+      "currency": "GBX"
+    },
+    {
+      "id": "HSBA.LON",
+      "name": "HSBC",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ULVR.LON",
+      "name": "Unilever",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "BP.LON",
+      "name": "BP",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Energy",
+      "currency": "GBX"
+    },
+    {
+      "id": "GSK.LON",
+      "name": "GSK",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Healthcare",
+      "currency": "GBX"
+    },
+    {
+      "id": "RIO.LON",
+      "name": "Rio Tinto",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "LSEG.LON",
+      "name": "London Stock Exchange",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "REL.LON",
+      "name": "RELX",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BARC.LON",
+      "name": "Barclays",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "TSCO.LON",
+      "name": "Tesco",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "VOD.LON",
+      "name": "Vodafone",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Telecoms",
+      "currency": "GBX"
+    },
+    {
+      "id": "VUKE.LON",
+      "name": "Vanguard FTSE 100 ETF",
+      "type": "etf",
+      "region": "UK",
+      "sector": "UK Equity",
+      "currency": "GBX",
+      "yahoo": "VUKE.L"
+    },
+    {
+      "id": "VWRL.LON",
+      "name": "Vanguard All-World ETF",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Global Equity",
+      "currency": "GBX",
+      "yahoo": "VWRL.L"
+    },
+    {
+      "id": "VUSA.LON",
+      "name": "Vanguard S&P 500 ETF",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Equity",
+      "currency": "GBX",
+      "yahoo": "VUSA.L"
+    },
+    {
+      "id": "SGLN.LON",
+      "name": "iShares Physical Gold",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "GBX",
+      "yahoo": "SGLN.L"
+    },
+    {
+      "id": "SPY",
+      "name": "SPDR S&P 500 (US)",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Equity",
+      "currency": "USD",
+      "yahoo": "SPY"
+    },
+    {
+      "id": "QQQ",
+      "name": "Invesco QQQ (US)",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Tech",
+      "currency": "USD",
+      "yahoo": "QQQ"
+    },
+    {
+      "id": "COT.GOLD",
+      "name": "Gold futures",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Metals",
+      "currency": "USD",
+      "cftc_code": "088691"
+    },
+    {
+      "id": "COT.SILVER",
+      "name": "Silver futures",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Metals",
+      "currency": "USD",
+      "cftc_code": "084691"
+    },
+    {
+      "id": "COT.WTI",
+      "name": "WTI crude futures",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Energy",
+      "currency": "USD",
+      "cftc_code": "067651"
+    },
+    {
+      "id": "COT.NATGAS",
+      "name": "Natural gas futures",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Energy",
+      "currency": "USD",
+      "cftc_code": "023651"
+    },
+    {
+      "id": "COT.COPPER",
+      "name": "Copper futures",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Metals",
+      "currency": "USD",
+      "cftc_code": "085692"
+    },
+    {
+      "id": "COT.WHEAT",
+      "name": "Wheat futures (SRW)",
+      "type": "commodity",
+      "region": "Global",
+      "sector": "Grains",
+      "currency": "USD",
+      "cftc_code": "001602"
+    }
   ]
 }

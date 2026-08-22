@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.1";
+const APP_VERSION = "0.2";
 
 const state = {
   meta: null,
@@ -11,7 +11,7 @@ const state = {
   chart: null,
 };
 
-const METRICS = ["price", "volume", "volume_ratio", "cot_net", "cot_percentile"];
+const METRICS = ["price", "volume", "volume_ratio", "cot_net", "cot_percentile", "etf_flow", "etf_flow_pct"];
 
 /* ---------- data loading ---------- */
 
@@ -70,6 +70,14 @@ function pctBadge(v) {
   return `<span class="badge ${cls}">${Math.round(v)}</span>`;
 }
 
+function flowBadge(v) {
+  if (v == null) return '<span class="badge na">-</span>';
+  const cls = Math.abs(v) >= 0.5 ? "hot" : Math.abs(v) >= 0.15 ? "warm" : "cool";
+  const sign = v > 0 ? "+" : "";
+  const col = v > 0 ? "color:#1a7f4b" : v < 0 ? "color:#c0392b" : "";
+  return `<span class="badge ${cls}" style="${col}">${sign}${v.toFixed(2)}%</span>`;
+}
+
 function recentEventCount(id, days = 30) {
   const evs = state.events[id] || [];
   const cutoff = new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10);
@@ -85,6 +93,7 @@ function screenerRows() {
     inst,
     price: lastValue("price", inst.id),
     volRatio: lastValue("volume_ratio", inst.id),
+    flowPct: lastValue("etf_flow_pct", inst.id),
     cotPct: lastValue("cot_percentile", inst.id),
     events: recentEventCount(inst.id),
   }));
@@ -113,6 +122,7 @@ function renderScreener() {
         <th class="hide-sm">Sector</th>
         <th class="num" data-k="price">Price ${arrow("price")}</th>
         <th class="num" data-k="volRatio" title="Volume vs own 20-day average">Vol vs avg ${arrow("volRatio")}</th>
+        <th class="num" data-k="flowPct" title="ETF net flow as % of fund AUM (creations/redemptions)">Flow ${arrow("flowPct")}</th>
         <th class="num" data-k="cotPct" title="Speculative net positioning percentile, 5y">COT %ile ${arrow("cotPct")}</th>
         <th class="num" data-k="events" title="Director dealings / TR-1s, last 30 days">Insider ${arrow("events")}</th>
       </tr></thead>
@@ -123,13 +133,14 @@ function renderScreener() {
             <td class="sector hide-sm">${r.inst.sector}</td>
             <td class="num">${fmtPrice(r.price, r.inst.currency)}</td>
             <td class="num">${ratioBadge(r.volRatio)}</td>
+            <td class="num">${r.inst.type === "etf" ? flowBadge(r.flowPct) : '<span class="badge na">-</span>'}</td>
             <td class="num">${r.inst.type === "commodity" ? pctBadge(r.cotPct) : '<span class="badge na">-</span>'}</td>
             <td class="num">${r.events || '<span class="badge na">-</span>'}</td>
           </tr>`).join("")}
       </tbody>
     </table>
     <p class="panel-note">Vol vs avg is trading activity, not net buying - direction has to be read
-    alongside price. ETF flow and insider columns activate as those adapters come online.</p>`;
+    alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider column activates when the RNS adapter comes online.</p>`;
 
   document.getElementById("app").innerHTML = html;
 
@@ -164,10 +175,14 @@ function renderDetail(id) {
       <div id="chart"></div>
       <p class="panel-note">${inst.type === "commodity"
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
+        : inst.type === "etf"
+        ? "Net flow = daily change in shares outstanding x price - actual creation/redemption of units, estimated from Yahoo data. The line is cumulative flow over the selected range."
         : "Volume bars are coloured by the day's price direction - suggestive of pressure, not a true buy/sell split."}</p>
     </div>`;
 
-  state.chart = echarts.init(document.getElementById("chart"));
+  const chartEl = document.getElementById("chart");
+  if (inst.type === "etf" && series("etf_flow", inst.id).length) chartEl.style.height = "540px";
+  state.chart = echarts.init(chartEl);
   drawChart(inst, "1Y");
 
   document.querySelectorAll(".ranges button").forEach((b) =>
@@ -212,6 +227,7 @@ function drawChart(inst, rangeKey) {
 
   const price = clip(series("price", inst.id), days);
   const vol = clip(series("volume", inst.id), days);
+  const flow = inst.type === "etf" ? clip(series("etf_flow", inst.id), days) : [];
   const volByDate = Object.fromEntries(vol);
   const dates = price.map((p) => p[0]);
 
@@ -229,28 +245,60 @@ function drawChart(inst, rangeKey) {
     itemStyle: { color: "#1F3864" },
   }));
 
+  const hasFlow = flow.length > 0;
+  const flowByDate = Object.fromEntries(flow);
+  let cum = 0;
+  const cumFlow = dates.map((d) => { cum += flowByDate[d] ?? 0; return Math.round(cum); });
+  const flowBars = dates.map((d) => {
+    const v = flowByDate[d] ?? 0;
+    return { value: v, itemStyle: { color: v >= 0 ? "#1a7f4b" : "#c0392b" } };
+  });
+
+  const grids = hasFlow
+    ? [
+        { left: 70, right: 20, top: 25, height: "40%" },
+        { left: 70, right: 20, top: "54%", height: "16%" },
+        { left: 70, right: 20, top: "78%", height: "16%" },
+      ]
+    : [
+        { left: 70, right: 20, top: 25, height: "55%" },
+        { left: 70, right: 20, top: "72%", height: "20%" },
+      ];
+
+  const xAxes = grids.map((_, i) => ({
+    type: "category", data: dates, gridIndex: i, show: i === grids.length - 1,
+  }));
+
+  const yAxes = [
+    { type: "value", scale: true, gridIndex: 0 },
+    { type: "value", gridIndex: 1, splitNumber: 2, name: "Vol", nameGap: 8 },
+  ];
+  if (hasFlow) {
+    yAxes.push({ type: "value", gridIndex: 2, splitNumber: 2, name: "Flow", nameGap: 8 });
+  }
+
+  const chartSeries = [
+    { name: "Price", type: "line", data: price.map((p) => p[1]),
+      showSymbol: false, lineStyle: { color: "#1F3864", width: 2 },
+      xAxisIndex: 0, yAxisIndex: 0,
+      markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
+    { name: "Volume", type: "bar", data: volData, xAxisIndex: 1, yAxisIndex: 1 },
+  ];
+  if (hasFlow) {
+    chartSeries.push(
+      { name: "Net flow", type: "bar", data: flowBars, xAxisIndex: 2, yAxisIndex: 2 },
+      { name: "Cumulative flow", type: "line", data: cumFlow, showSymbol: false,
+        xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: "#2E5A9C", width: 1.5 } },
+    );
+  }
+
   state.chart.setOption({
     tooltip: { trigger: "axis" },
     axisPointer: { link: [{ xAxisIndex: "all" }] },
-    grid: [
-      { left: 60, right: 20, top: 25, height: "55%" },
-      { left: 60, right: 20, top: "72%", height: "20%" },
-    ],
-    xAxis: [
-      { type: "category", data: dates, gridIndex: 0, show: false },
-      { type: "category", data: dates, gridIndex: 1 },
-    ],
-    yAxis: [
-      { type: "value", scale: true, gridIndex: 0 },
-      { type: "value", gridIndex: 1, splitNumber: 2 },
-    ],
-    series: [
-      { name: "Price", type: "line", data: price.map((p) => p[1]),
-        showSymbol: false, lineStyle: { color: "#1F3864", width: 2 },
-        xAxisIndex: 0, yAxisIndex: 0,
-        markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
-      { name: "Volume", type: "bar", data: volData, xAxisIndex: 1, yAxisIndex: 1 },
-    ],
+    grid: grids,
+    xAxis: xAxes,
+    yAxis: yAxes,
+    series: chartSeries,
   }, true);
 }
 
