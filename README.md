@@ -17,7 +17,7 @@ Be precise about what each number is - several look similar but mean different t
 | cot_net | data/cot_net.json | CFTC non-commercial (speculator) net position, contracts, weekly |
 | cot_percentile | data/cot_percentile.json | cot_net as a percentile of its own fetched history |
 | etf_flow / etf_flow_pct | (stub) | True net creations/redemptions - the only genuine "net buying" here |
-| events | data/events.json | Director dealings (PDMR) and TR-1 major holding notifications, from RNS via Investegate. Kinds: `pdmr_buy`, `pdmr_sell`, `pdmr_award`, `tr1_up`, `tr1_down`. `value_gbp` covers sterling tranches only and is null for dealings quoted in EUR/USD |
+| events | data/events.json | Insider activity. UK: PDMR dealings and TR-1 holdings from RNS via Investegate. US: SEC Form 4. Kinds: `pdmr_buy`, `pdmr_sell`, `pdmr_award`, `pdmr_scheduled`, `tr1_up`, `tr1_down`. `value_gbp` covers sterling tranches only and is null for dealings quoted in EUR/USD |
 
 Store shape for time series: `{ "updated": "YYYY-MM-DD", "series": { "<id>": [["YYYY-MM-DD", value], ...] } }`.
 History accumulates by merging in the repo, so sources that only return a recent
@@ -48,6 +48,14 @@ window still build a full series over time.
 - Investegate lists an announcement under every company it names, so a bank's
   page carries TR-1s about entirely different issuers. The adapter drops any
   event whose issuer does not match the instrument exactly.
+- `pdmr_scheduled` (US Rule 10b5-1 plan trades) is likewise not counted as
+  signal - the plan is adopted months before it executes.
+- meta.json holds exactly 22 equity+ETF symbols against Alpha Vantage's 22
+  calls per run, so everything refreshes daily. Adding a 23rd starts a
+  rotation and slows every instrument down.
+- SEC wants a contact address in the User-Agent. Set the `SEC_CONTACT`
+  repository variable to a real address (Settings -> Secrets and variables ->
+  Actions -> Variables).
 
 ## Roadmap
 
@@ -55,7 +63,7 @@ window still build a full series over time.
       (see adapters/informed_money.py)
 - [ ] ETF flows (shares-outstanding method - see adapters/etf_flows.py): runs in
       Actions, cannot be validated from a Claude Code web session
-- [ ] SEC Form 4 for US names via EDGAR full-text search
+- [x] SEC Form 4 for US names (AAPL, MSFT, NVDA, JPM)
 - [ ] Sector-level aggregation view (category → sector → instrument drill-down)
 - [ ] Phase 2: paid tick data (Polygon / Databento) → true order-flow imbalance
       and block-trade flags as new adapters, no rework

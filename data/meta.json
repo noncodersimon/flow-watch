@@ -106,6 +106,42 @@
       "currency": "GBX"
     },
     {
+      "id": "AAPL",
+      "name": "Apple",
+      "type": "equity",
+      "region": "US",
+      "sector": "Technology",
+      "currency": "USD",
+      "cik": "0000320193"
+    },
+    {
+      "id": "MSFT",
+      "name": "Microsoft",
+      "type": "equity",
+      "region": "US",
+      "sector": "Technology",
+      "currency": "USD",
+      "cik": "0000789019"
+    },
+    {
+      "id": "NVDA",
+      "name": "NVIDIA",
+      "type": "equity",
+      "region": "US",
+      "sector": "Technology",
+      "currency": "USD",
+      "cik": "0001045810"
+    },
+    {
+      "id": "JPM",
+      "name": "JPMorgan Chase",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000019617"
+    },
+    {
       "id": "VUKE.LON",
       "name": "Vanguard FTSE 100 ETF",
       "type": "etf",

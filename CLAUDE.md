@@ -28,16 +28,24 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - etf_flow: daily change in shares outstanding x price (yfinance). Genuine
   creation/redemption, but an estimate - keep the caveat notes in the UI.
 - cot_net / cot_percentile: CFTC non-commercial net positioning, weekly.
-- events.json kinds: pdmr_buy, pdmr_sell, pdmr_award, tr1_up, tr1_down.
-  pdmr_award is share-scheme activity (option exercise, vest, nil-cost award,
-  and any sale that only settles one). It is drawn on the chart but never
-  counted as insider buying or selling - see the decision log.
+- events.json kinds: pdmr_buy, pdmr_sell, pdmr_award, pdmr_scheduled,
+  tr1_up, tr1_down. pdmr_award is share-scheme activity (option exercise,
+  vest, nil-cost award, and any sale that only settles one).
+  pdmr_scheduled is a US Rule 10b5-1 plan trade. Both are drawn on the
+  chart but never counted as insider buying or selling - see the decision
+  log. Only pdmr_buy, pdmr_sell, tr1_up and tr1_down feed the Insider
+  column.
 
 ## Known constraints
 
 - Alpha Vantage free tier ~25 req/day: volume adapter rotates 22 symbols/run
   and pulls "full" history on first seed, "compact" thereafter (150-point
-  threshold).
+  threshold). meta.json now holds exactly 22 equity+ETF symbols, so every
+  instrument still refreshes daily - the 23rd starts the rotation and
+  everything slows down. Check this before adding instruments.
+- SEC needs a User-Agent naming a contact address; it rejects unroutable
+  ones, users.noreply.github.com among them. sec_form4.py reads SEC_CONTACT
+  and falls back to a placeholder. Set the repo variable to a real address.
 - LSE instruments quote in pence: currency "GBX" in meta.json, scaled /100
   where flows are computed in pounds. Preserve this.
 - Yahoo (yfinance) sometimes rate-limits GitHub runners - ETF flow failures
@@ -148,18 +156,16 @@ they are in git history at commit d904319.
 
 Live: volume/price/ratio (Alpha Vantage), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
-before deltas exist), and informed money (Investegate RNS - PDMR dealings
-and TR-1 major holdings for the 12 UK equities in meta.json).
+before deltas exist), and informed money on both sides of the Atlantic -
+Investegate RNS for the 12 UK equities (PDMR dealings and TR-1 major
+holdings) and SEC Form 4 for the 4 US equities.
 
 ## Roadmap
 
 1. Verify 10y backfill completes across the rotation (2 runs) and 1Y/5Y ranges
    differentiate.
-2. Extend informed_money.py to US names: SEC Form 4 via EDGAR full-text search
-   (efts.sec.gov, needs a declared User-Agent). The parse layer is already
-   separated, so this is a new parse_form4 plus a fetch, not a rewrite.
-3. Sector-level aggregation view (category -> sector -> instrument drill-down).
-4. Phase 2: paid tick data (Polygon/Databento) -> order-flow imbalance and
+2. Sector-level aggregation view (category -> sector -> instrument drill-down).
+3. Phase 2: paid tick data (Polygon/Databento) -> order-flow imbalance and
    block-trade flags as new adapters. No rework of existing code expected.
 
 ### 2026-08-22 - The web sandbox network constraint is superseded, but only partly
@@ -225,3 +231,58 @@ has none, and a currency field records what the form actually said. The
 event is still recorded either way - only the money figure is withheld.
 Rejected: converting at an FX rate, which bolts a second data source and a
 daily failure mode onto what is meant to be a signal count.
+
+### 2026-08-22 - SEC Form 4 is its own adapter, not more of informed_money.py
+The roadmap said "a new parse_form4 plus a fetch, not a rewrite", which
+read as extending informed_money.py. Splitting it out instead. The two
+sources share nothing but the event store: Investegate is HTML built for
+humans and takes several hundred lines of text wrangling, Form 4 is
+structured XML where classification is a lookup on a transaction code.
+Bolting the second onto the first would have made a 900-line module with
+two unrelated halves. The event-store helpers moved to common.py, which
+already owns the store shape, and both adapters now use them.
+
+### 2026-08-22 - Rule 10b5-1 trades get their own kind and are not a signal
+The US analogue of the share-scheme decision above. A 10b5-1 plan is
+adopted months before it executes, so the sale says something about the
+calendar, not about the price. Those become pdmr_scheduled and are left
+out of the buy/sell totals. It matters: of 82 US events in the first run
+only 9 were discretionary dealings, 21 were plan trades and 52 were
+scheme activity. Apple's filings show both kinds side by side - a
+director's own 50,000 share sale against another insider's routine
+vest-and-sell. Rejected: counting plan trades as ordinary sells, which
+would bury the 9 that actually mean something.
+
+### 2026-08-22 - browse-edgar type=4 is a prefix match, so owner=only is required
+EDGAR matches "type" as a prefix, so type=4 also returns 424B2
+prospectuses. JPMorgan files so many of those that its feed contained not
+one real Form 4 and the adapter silently produced nothing for it. Apple
+worked only because it files few other 4xx forms - which is exactly how
+this would have shipped unnoticed. owner=only restricts the feed to
+ownership filings. The exact filing-type == "4" guard stays as well, to
+keep 4/A amendments out: an amendment restates a transaction already
+filed, so counting it would double up.
+
+### 2026-08-22 - Form 4 events need a stable ref to de-duplicate
+The event key was date + kind + who + value_gbp. US trades are in dollars
+and therefore carry a null value_gbp, so one insider filing two sales on
+the same day collapsed into a single event - Levinson sold 149,527 and
+100,473 Apple shares on 2026-05-06 and one of them vanished. Events may
+now carry "ref", a stable source reference (the filing accession plus the
+transaction's index within it), and that wins when present. UK events have
+no ref and keep the old key, so committed data is unaffected.
+
+### 2026-08-22 - The SEC contact address is configuration, not a constant
+SEC fair access wants a User-Agent naming a contact it can reach, and it
+refuses unroutable ones - users.noreply.github.com is rejected outright.
+Hardcoding a personal address into a public repo is the wrong default, so
+sec_form4.py reads SEC_CONTACT and falls back to a placeholder that works
+today but is not what the policy asks for. Set the repo variable.
+
+### 2026-08-22 - US values stay in dollars, so value_gbp is null for them
+Consistent with the sterling-only decision above, and for the same reason:
+converting would bolt an FX source and a daily failure mode onto a signal
+count. Form 4 gives exact share counts and prices, so those go into the
+detail string and nothing is lost - "Open-market sale 50,000 shares at
+$311.02". The UI counts events rather than summing money, so nothing
+downstream needs the figure.

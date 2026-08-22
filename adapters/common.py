@@ -60,3 +60,57 @@ def percentile_of_last(values):
     last = values[-1]
     below = sum(1 for v in values if v < last)
     return round(100.0 * below / (len(values) - 1), 1)
+
+# --------------------------------------------------------------------------
+# event store (data/events.json) - shared by the RNS and SEC adapters
+# --------------------------------------------------------------------------
+
+MAX_EVENTS_PER_ID = 400
+
+
+def load_events():
+    path = os.path.join(DATA_DIR, "events.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            store = json.load(f)
+    else:
+        store = {"updated": None, "events": {}}
+    store.setdefault("events", {})
+    return store
+
+
+def save_events(store):
+    store["updated"] = date.today().isoformat()
+    path = os.path.join(DATA_DIR, "events.json")
+    with open(path, "w") as f:
+        json.dump(store, f, separators=(",", ":"))
+    print(f"wrote events.json ({len(store['events'])} instruments)")
+
+
+def event_key(ev):
+    """Identity of an event for de-duplication.
+
+    A source that can mint a stable reference (the SEC adapter uses the
+    filing accession plus the transaction's position in it) sets "ref" and
+    that wins. Without one, fall back to the value-based key. That fallback
+    is not safe on its own for Form 4, where one insider can file two sales
+    on the same day at different prices and both carry a null value_gbp -
+    they would collapse into a single event.
+    """
+    if ev.get("ref"):
+        return ("ref", ev["ref"])
+    return (ev.get("date"), ev.get("kind"), ev.get("who"), ev.get("value_gbp"))
+
+
+def merge_events(store, instrument_id, new_events):
+    """Merge events for one instrument, de-duplicating and keeping date order."""
+    existing = store["events"].get(instrument_id, [])
+    seen = {event_key(e) for e in existing}
+    for ev in new_events:
+        k = event_key(ev)
+        if k in seen:
+            continue
+        seen.add(k)
+        existing.append(ev)
+    existing.sort(key=lambda e: (e.get("date") or "", e.get("kind") or ""))
+    store["events"][instrument_id] = existing[-MAX_EVENTS_PER_ID:]

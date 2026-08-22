@@ -35,16 +35,14 @@ unless the issuer named in the form matches the instrument.
 """
 
 import html as html_mod
-import json
-import os
 import re
 import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import datetime
 
-from common import DATA_DIR, load_meta
+from common import load_meta, load_events, merge_events, save_events
 
 BASE = "https://www.investegate.co.uk"
 UA = (
@@ -53,7 +51,6 @@ UA = (
 )
 MAX_PER_TICKER = 15      # newest announcements to open per instrument per run
 PAUSE_SECONDS = 1.0      # be polite to a free source
-MAX_EVENTS_PER_ID = 400
 
 
 # --------------------------------------------------------------------------
@@ -514,24 +511,6 @@ def rns_ticker(inst):
     return inst.get("rns") or inst["id"].split(".")[0]
 
 
-def event_key(ev):
-    return (ev.get("date"), ev.get("kind"), ev.get("who"), ev.get("value_gbp"))
-
-
-def merge_events(store, instrument_id, new_events):
-    """Merge events, de-duplicating on date+kind+who+value and keeping order."""
-    existing = store["events"].get(instrument_id, [])
-    seen = {event_key(e) for e in existing}
-    for ev in new_events:
-        k = event_key(ev)
-        if k in seen:
-            continue
-        seen.add(k)
-        existing.append(ev)
-    existing.sort(key=lambda e: (e.get("date") or "", e.get("kind") or ""))
-    store["events"][instrument_id] = existing[-MAX_EVENTS_PER_ID:]
-
-
 def collect_for_instrument(inst, fetcher=fetch):
     """Fetch and parse the recent informed-money events for one instrument."""
     ticker = rns_ticker(inst)
@@ -595,14 +574,7 @@ def main():
     targets = [i for i in meta["instruments"]
                if i["type"] == "equity" and i.get("region") == "UK"]
 
-    path = os.path.join(DATA_DIR, "events.json")
-    if os.path.exists(path):
-        with open(path) as f:
-            store = json.load(f)
-    else:
-        store = {"updated": None, "events": {}}
-    store.setdefault("events", {})
-
+    store = load_events()
     total = 0
     for inst in targets:
         print(f"informed_money: {inst['id']} ({rns_ticker(inst)})")
@@ -612,9 +584,7 @@ def main():
             total += len(events)
             print(f"  {len(events)} event(s)")
 
-    store["updated"] = date.today().isoformat()
-    with open(path, "w") as f:
-        json.dump(store, f, separators=(",", ":"))
+    save_events(store)
     print(f"informed_money: {total} new event(s) across {len(targets)} instruments")
 
 

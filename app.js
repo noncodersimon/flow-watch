@@ -1,16 +1,19 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.4";
+const APP_VERSION = "0.5";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
-   sale that only settles one. Those are calendar-driven, not a view on the
-   price, so they are drawn on the chart but never counted as insider buying
-   or selling - counting them would make every director look like a seller. */
+   sale that only settles one. pdmr_scheduled is its US sibling: a Rule 10b5-1
+   trade, adopted months before it executes. Both are calendar-driven, not a
+   view on the price, so they are drawn on the chart but never counted as
+   insider buying or selling - counting them would make every director look
+   like a seller. */
 const EVENT_MARKS = {
   pdmr_buy:   { glyph: "▲", color: "#1a7f4b", label: "Director buy" },
   pdmr_sell:  { glyph: "▼", color: "#c0392b", label: "Director sell" },
   pdmr_award: { glyph: "◆", color: "#667",    label: "Share scheme award or exercise" },
+  pdmr_scheduled: { glyph: "◇", color: "#667", label: "Pre-scheduled plan trade (Rule 10b5-1)" },
   tr1_up:     { glyph: "▲", color: "#2E5A9C", label: "Major holding increased" },
   tr1_down:   { glyph: "▼", color: "#2E5A9C", label: "Major holding decreased" },
 };
@@ -185,8 +188,9 @@ function renderScreener() {
     </table>
     <p class="panel-note">Vol vs avg is trading activity, not net buying - direction has to be read
     alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider counts open-market director dealings and TR-1 holding
-    changes from RNS. Share-scheme awards, vestings and option exercises are marked on the chart
-    but not counted - they are calendar-driven, not a view on the price.</p>`;
+    changes from RNS, and US insider dealings from SEC Form 4. Share-scheme awards, vestings and
+    option exercises, and trades made under a pre-arranged Rule 10b5-1 plan, are marked on the
+    chart but not counted - they are calendar-driven, not a view on the price.</p>`;
 
   document.getElementById("app").innerHTML = html;
 
