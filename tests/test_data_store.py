@@ -31,7 +31,7 @@ SERIES_METRICS = [
     "etf_shares",
 ]
 
-EVENT_KINDS = {"pdmr_buy", "pdmr_sell", "tr1_up", "tr1_down"}
+EVENT_KINDS = {"pdmr_buy", "pdmr_sell", "pdmr_award", "tr1_up", "tr1_down"}
 INSTRUMENT_TYPES = {"equity", "etf", "commodity"}
 
 

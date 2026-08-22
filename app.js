@@ -1,6 +1,20 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.2";
+const APP_VERSION = "0.3";
+
+/* Event kinds written by adapters/informed_money.py.
+   pdmr_award covers option exercises, vests and nil-cost awards, including a
+   sale that only settles one. Those are calendar-driven, not a view on the
+   price, so they are drawn on the chart but never counted as insider buying
+   or selling - counting them would make every director look like a seller. */
+const EVENT_MARKS = {
+  pdmr_buy:   { glyph: "▲", color: "#1a7f4b", label: "Director buy" },
+  pdmr_sell:  { glyph: "▼", color: "#c0392b", label: "Director sell" },
+  pdmr_award: { glyph: "◆", color: "#667",    label: "Share scheme award or exercise" },
+  tr1_up:     { glyph: "▲", color: "#2E5A9C", label: "Major holding increased" },
+  tr1_down:   { glyph: "▼", color: "#2E5A9C", label: "Major holding decreased" },
+};
+const DIRECTIONAL_KINDS = ["pdmr_buy", "pdmr_sell", "tr1_up", "tr1_down"];
 
 const state = {
   meta: null,
@@ -81,7 +95,7 @@ function flowBadge(v) {
 function recentEventCount(id, days = 30) {
   const evs = state.events[id] || [];
   const cutoff = new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10);
-  return evs.filter((e) => e.date >= cutoff).length;
+  return evs.filter((e) => e.date >= cutoff && DIRECTIONAL_KINDS.includes(e.kind)).length;
 }
 
 /* ---------- screener view ---------- */
@@ -124,7 +138,7 @@ function renderScreener() {
         <th class="num" data-k="volRatio" title="Volume vs own 20-day average">Vol vs avg ${arrow("volRatio")}</th>
         <th class="num" data-k="flowPct" title="ETF net flow as % of fund AUM (creations/redemptions)">Flow ${arrow("flowPct")}</th>
         <th class="num" data-k="cotPct" title="Speculative net positioning percentile, 5y">COT %ile ${arrow("cotPct")}</th>
-        <th class="num" data-k="events" title="Director dealings / TR-1s, last 30 days">Insider ${arrow("events")}</th>
+        <th class="num" data-k="events" title="Open-market director dealings and TR-1 holding changes, last 30 days - share-scheme awards excluded">Insider ${arrow("events")}</th>
       </tr></thead>
       <tbody>
         ${rows.map((r) => `
@@ -140,7 +154,9 @@ function renderScreener() {
       </tbody>
     </table>
     <p class="panel-note">Vol vs avg is trading activity, not net buying - direction has to be read
-    alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider column activates when the RNS adapter comes online.</p>`;
+    alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider counts open-market director dealings and TR-1 holding
+    changes from RNS. Share-scheme awards, vestings and option exercises are marked on the chart
+    but not counted - they are calendar-driven, not a view on the price.</p>`;
 
   document.getElementById("app").innerHTML = html;
 
@@ -239,11 +255,15 @@ function drawChart(inst, rangeKey) {
 
   // insider event markers
   const evs = (state.events[inst.id] || []).filter((e) => dates.includes(e.date));
-  const markPoints = evs.map((e) => ({
-    coord: [e.date, price[dates.indexOf(e.date)][1]],
-    value: e.kind.includes("buy") || e.kind.includes("up") ? "▲" : "▼",
-    itemStyle: { color: "#1F3864" },
-  }));
+  const markPoints = evs.map((e) => {
+    const mark = EVENT_MARKS[e.kind] || { glyph: "●", color: "#1F3864", label: e.kind };
+    return {
+      coord: [e.date, price[dates.indexOf(e.date)][1]],
+      value: mark.glyph,
+      itemStyle: { color: mark.color },
+      name: mark.label,
+    };
+  });
 
   const hasFlow = flow.length > 0;
   const flowByDate = Object.fromEntries(flow);

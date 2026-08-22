@@ -28,7 +28,10 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - etf_flow: daily change in shares outstanding x price (yfinance). Genuine
   creation/redemption, but an estimate - keep the caveat notes in the UI.
 - cot_net / cot_percentile: CFTC non-commercial net positioning, weekly.
-- events.json kinds: pdmr_buy, pdmr_sell, tr1_up, tr1_down.
+- events.json kinds: pdmr_buy, pdmr_sell, pdmr_award, tr1_up, tr1_down.
+  pdmr_award is share-scheme activity (option exercise, vest, nil-cost award,
+  and any sale that only settles one). It is drawn on the chart but never
+  counted as insider buying or selling - see the decision log.
 
 ## Known constraints
 
@@ -40,12 +43,18 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - Yahoo (yfinance) sometimes rate-limits GitHub runners - ETF flow failures
   are per-instrument and must stay non-fatal.
 - CFTC COT is weekly (Friday publication, Tuesday data).
-- Claude Code web sandboxes block outbound market data. Every source host
-  (Yahoo, CFTC, Alpha Vantage, LSE, Investegate, SEC) returns 403 at the
-  egress proxy; pypi and GitHub are allowed. Adapters therefore cannot be
-  validated against live data in a web session - only in Actions, which has
-  open network. Build parsers so the fetch is a thin, separable layer and
-  the parsing runs against saved fixtures offline.
+- Web session network access is partial - check before assuming. As of
+  2026-08-22 plain HTTP clients (urllib, curl) reach CFTC, Investegate, LSE
+  and Alpha Vantage fine. Two things still do not work in a web session:
+  yfinance, whose curl_cffi transport is reset by the egress proxy
+  ("Recv failure: Connection reset by peer"), and Yahoo itself, which
+  rate-limits the shared sandbox IP (429) even over plain urllib. So ETF
+  flows remain Actions-only. SEC needs a declared User-Agent with a contact
+  address or it returns 403; www.sec.gov and efts.sec.gov then work, but
+  data.sec.gov is blocked at the proxy.
+- Keep the fetch a thin, separable layer regardless, with parsing as pure
+  functions over saved fixtures. That is what makes a source testable when
+  the sandbox cannot reach it, and it is how informed_money.py is built.
 
 ## Conventions
 
@@ -135,19 +144,84 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
-## Current state (Aug 2026, v0.2)
+## Current state (Aug 2026, v0.3)
 
 Live: volume/price/ratio (Alpha Vantage), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
-before deltas exist). Stub: adapters/informed_money.py (empty events store).
+before deltas exist), and informed money (Investegate RNS - PDMR dealings
+and TR-1 major holdings for the 12 UK equities in meta.json).
 
 ## Roadmap
 
 1. Verify 10y backfill completes across the rotation (2 runs) and 1Y/5Y ranges
    differentiate.
-2. Build informed_money.py: parse LSE RNS / Investegate for PDMR dealings and
-   TR-1 holdings notifications for tickers in meta.json; later SEC Form 4 via
-   EDGAR. UI already renders event markers and the Insider column.
+2. Extend informed_money.py to US names: SEC Form 4 via EDGAR full-text search
+   (efts.sec.gov, needs a declared User-Agent). The parse layer is already
+   separated, so this is a new parse_form4 plus a fetch, not a rewrite.
 3. Sector-level aggregation view (category -> sector -> instrument drill-down).
 4. Phase 2: paid tick data (Polygon/Databento) -> order-flow imbalance and
    block-trade flags as new adapters. No rework of existing code expected.
+
+### 2026-08-22 - The web sandbox network constraint is superseded, but only partly
+The previous entry in Known constraints said every source host 403s at the
+egress proxy. That is no longer true: CFTC, Investegate, LSE and Alpha
+Vantage all answer plain urllib/curl, and the COT adapter was validated
+live this session. Two blockers remain and they are different from each
+other - yfinance uses curl_cffi to impersonate a browser TLS fingerprint,
+which the MITM proxy resets outright, and Yahoo separately rate-limits the
+shared sandbox IP with a 429. So "no network" was the wrong diagnosis to
+carry forward, but "ETF flows are Actions-only" happens to still hold.
+Check the specific host and client before assuming either way.
+
+### 2026-08-22 - Share-scheme dealings are recorded but never counted as a signal
+PDMR announcements are dominated by option exercises, vests and the
+immediate sales that settle the tax on them. Those are calendar-driven, so
+counting them as selling makes every board look permanently bearish - the
+opposite of informed. They get their own kind, pdmr_award, are drawn on the
+chart in muted grey, and are excluded from the Insider column and from any
+buy/sell total. Classification puts scheme wording ahead of buy/sell
+wording, so "sale of shares on exercise of nil cost options" is an award,
+not a sell. Rejected: dropping them entirely, which would hide real
+dilution and make the chart look emptier than the RNS record actually is.
+
+### 2026-08-22 - RNS issuer matching is exact, and it is not optional
+Investegate indexes an announcement under every company it names, so a
+bank's page is full of TR-1s where the bank is the holder and the issuer is
+somebody else. Both TR-1s found on the HSBC and Barclays pages this session
+were exactly that - the issuers were Informa and Central Asia Metals. Every
+parsed event is therefore dropped unless the issuer named in the form
+matches the instrument exactly on a normalised name. Rejected: prefix or
+substring matching, which is how "BP" silently swallows "BP Marsh &
+Partners plc" and invents insider activity that never happened. Where a
+company needs a different spelling, set "issuer" on it in meta.json.
+
+### 2026-08-22 - Parser tests are back, as fixture tests
+This does not reverse the 2026-08-22 decision to trim tests to /data
+integrity - it is the case that entry anticipated, where "a fetch function
+grows real logic, that logic should move into a pure function and be tested
+there". The RNS parsers are several hundred lines of pure text handling
+with no network, and the issuer guard above is the kind of bug that fails
+silently and poisons the store. tests/fixtures holds real Investegate pages
+saved on 2026-08-22 with scripts and styles stripped, about 190KB in total.
+
+### 2026-08-22 - PDMR value is price x volume, not the stated total
+Section 4(d) "Aggregated information" is not laid out consistently between
+issuers. Mitie lists the total value first; BP lists the average price
+first and the total last. Taking the first pound figure therefore recorded
+a GBP 1.96m BP director sale as GBP 5.59 - a real bug caught only because
+the number looked absurd next to the share price. Price x volume is the one
+figure that always agrees, so it computes the value, and a stated pound
+figure is used only when it corroborates to within 2%. Do not "simplify"
+this back to reading the stated total.
+
+### 2026-08-22 - PDMR values are sterling-only, and the store says which
+Cross-listed issuers quote the same dealing in several currencies - one
+Unilever announcement carries GBP, EUR and USD tranches of the same award,
+and its ADR purchases are priced in dollars. Treating an unmarked number as
+sterling is right here (every instrument covered is LSE listed), but
+treating "EUR 55.82" as GBP 55.82 silently invented a GBP 150k sale. So
+value_gbp is now the sum of the sterling tranches only, null when a dealing
+has none, and a currency field records what the form actually said. The
+event is still recorded either way - only the money figure is withheld.
+Rejected: converting at an FX rate, which bolts a second data source and a
+daily failure mode onto what is meant to be a signal count.
