@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.3";
+const APP_VERSION = "0.4";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -90,6 +90,36 @@ function flowBadge(v) {
   const sign = v > 0 ? "+" : "";
   const col = v > 0 ? "color:#1a7f4b" : v < 0 ? "color:#c0392b" : "";
   return `<span class="badge ${cls}" style="${col}">${sign}${v.toFixed(2)}%</span>`;
+}
+
+/* Axis units. Raw share volumes and pound flows run to eight or nine digits,
+   which is unreadable on a phone-width axis. Pick a unit from the largest
+   value the axis actually has to show, so a FTSE 100 volume reads "42"
+   against "Vol (m)" while a small ETF reads "180" against "Vol (k)". It is
+   chosen per instrument and per range, so switching to 1Y or to a thinly
+   traded line rescales rather than flattening to zero. The exact figure is
+   always one hover away in the tooltip. */
+function axisScale(values) {
+  let max = 0;
+  for (const v of values) {
+    const a = Math.abs(v || 0);
+    if (a > max) max = a;
+  }
+  if (max >= 1e9) return { div: 1e9, unit: "bn" };
+  if (max >= 1e6) return { div: 1e6, unit: "m" };
+  if (max >= 1e3) return { div: 1e3, unit: "k" };
+  return { div: 1, unit: "" };
+}
+
+function axisName(label, scale) {
+  return scale.unit ? `${label} (${scale.unit})` : label;
+}
+
+function scaledLabel(v, scale) {
+  const n = v / scale.div;
+  if (scale.div === 1) return String(Math.round(n));
+  // keep a decimal while the numbers are small, or 0.5m rounds away to "0"
+  return Math.abs(n) < 10 && n !== 0 ? n.toFixed(1) : String(Math.round(n));
 }
 
 function recentEventCount(id, days = 30) {
@@ -223,7 +253,13 @@ function drawChart(inst, rangeKey) {
     const net = clip(series("cot_net", inst.id), days);
     const pct = clip(series("cot_percentile", inst.id), days);
     state.chart.setOption({
-      tooltip: { trigger: "axis" },
+      tooltip: {
+      trigger: "axis",
+      valueFormatter: (v) =>
+        typeof v === "number"
+          ? v.toLocaleString("en-GB", { maximumFractionDigits: 2 })
+          : v,
+    },
       legend: { data: ["Net position", "Percentile"] },
       xAxis: { type: "category", data: net.map((p) => p[0]) },
       yAxis: [
@@ -289,12 +325,19 @@ function drawChart(inst, rangeKey) {
     type: "category", data: dates, gridIndex: i, show: i === grids.length - 1,
   }));
 
+  const volScale = axisScale(volData.map((v) => v.value));
+  const flowScale = axisScale(flowBars.map((v) => v.value).concat(cumFlow));
+
   const yAxes = [
     { type: "value", scale: true, gridIndex: 0 },
-    { type: "value", gridIndex: 1, splitNumber: 2, name: "Vol", nameGap: 8 },
+    { type: "value", gridIndex: 1, splitNumber: 2,
+      name: axisName("Vol", volScale), nameGap: 8,
+      axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
   ];
   if (hasFlow) {
-    yAxes.push({ type: "value", gridIndex: 2, splitNumber: 2, name: "Flow", nameGap: 8 });
+    yAxes.push({ type: "value", gridIndex: 2, splitNumber: 2,
+      name: axisName("Flow", flowScale), nameGap: 8,
+      axisLabel: { formatter: (v) => scaledLabel(v, flowScale) } });
   }
 
   const chartSeries = [
