@@ -1,0 +1,7 @@
+# Runtime dependency for the adapters. The front end has none - vanilla JS
+# plus ECharts from a CDN, no npm, no build step.
+#
+# Only adapters/etf_flows.py needs this; the volume and COT adapters use
+# urllib from the standard library. Kept unpinned to match the workflow,
+# which installs the current release on every run.
+yfinance

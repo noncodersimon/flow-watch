@@ -1,0 +1,8 @@
+# Byte-compiled artefacts from py_compile / test runs
+__pycache__/
+*.py[cod]
+
+# Local editor and OS noise
+.DS_Store
+.vscode/
+.idea/

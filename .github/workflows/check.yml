@@ -1,0 +1,29 @@
+name: Checks
+
+# Runs on every push and pull request, and after the fetch workflow commits
+# data. That last trigger matters most - the adapters commit to the repo
+# unattended on a cron, so this is what catches a malformed store before
+# anyone looks at the site.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_run:
+    workflows: ["Fetch market data"]
+    types: [completed]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run checks
+        run: ./check.sh
