@@ -24,10 +24,10 @@ MAX_CALLS = 22  # leave headroom under the 25/day free tier
 PAUSE_SECONDS = 15  # free tier also rate-limits per minute
 
 
-def fetch_daily(symbol, api_key):
+def fetch_daily(symbol, api_key, outputsize):
     url = (
         "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY"
-        f"&symbol={symbol}&outputsize=compact&apikey={api_key}"
+        f"&symbol={symbol}&outputsize={outputsize}&apikey={api_key}"
     )
     with urllib.request.urlopen(url, timeout=30) as r:
         payload = json.load(r)
@@ -59,8 +59,12 @@ def main():
     ratio_store = load_store("volume_ratio")
 
     for sym in todays:
-        print(f"fetching {sym}")
-        result = fetch_daily(sym, api_key)
+        # first seed pulls full history (20y, capped at MAX_POINTS on merge);
+        # thereafter compact daily top-ups keep responses small
+        seeded = len(price_store["series"].get(sym, [])) >= 150
+        size = "compact" if seeded else "full"
+        print(f"fetching {sym} ({size})")
+        result = fetch_daily(sym, api_key, size)
         if result:
             closes, volumes = result
             merge_series(price_store, sym, closes)
