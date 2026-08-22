@@ -135,11 +135,24 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
+### 2026-08-22 - informed_money: store plumbing built before the source
+The sandbox blocks every RNS host, so the parser cannot be written against a
+real announcement yet. Rather than guess at markup, built the parts that do
+not depend on it: common.py gained load_events / merge_events / save_events
+mirroring the series helpers, and informed_money.py now does instrument
+matching and de-duplication for real, with fetch_announcements() as the
+single NotImplementedError seam. Running it today is byte-for-byte identical
+to the old stub. Event identity is source_id when the feed gives one, else
+(date, kind, who, value_gbp) - the fallback is why merge_events must stay
+idempotent, since the adapter re-polls a 14 day overlapping window each run.
+
 ## Current state (Aug 2026, v0.2)
 
 Live: volume/price/ratio (Alpha Vantage), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
-before deltas exist). Stub: adapters/informed_money.py (empty events store).
+before deltas exist). adapters/informed_money.py has its store plumbing and
+instrument matching done; only fetch_announcements() is outstanding, and it
+needs network access to an RNS feed.
 
 ## Roadmap
 

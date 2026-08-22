@@ -14,6 +14,7 @@ from datetime import date
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 MAX_POINTS = 2600  # ~10 years of daily points per instrument
+MAX_EVENTS = 500   # per instrument, plenty for years of RNS filings
 
 
 def load_meta():
@@ -60,3 +61,60 @@ def percentile_of_last(values):
     last = values[-1]
     below = sum(1 for v in values if v < last)
     return round(100.0 * below / (len(values) - 1), 1)
+
+
+# ---------------------------------------------------------------------------
+# Event store (data/events.json) - director dealings and TR-1 notifications.
+# Shape differs from the time series: one list of event dicts per instrument
+# rather than [date, value] pairs, so it needs its own merge.
+# ---------------------------------------------------------------------------
+
+
+def load_events():
+    path = os.path.join(DATA_DIR, "events.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {"updated": None, "events": {}}
+
+
+def event_key(event):
+    """Identity of an event, for de-duplication across runs.
+
+    RNS announcements carry no stable public id in every feed, so fall back
+    to the fields that together make a filing unique in practice. If a source
+    does supply an id, it wins - that is the only fully reliable key.
+    """
+    if event.get("source_id"):
+        return ("id", event["source_id"])
+    return (
+        event.get("date"),
+        event.get("kind"),
+        event.get("who"),
+        event.get("value_gbp"),
+    )
+
+
+def merge_events(store, instrument_id, new_events):
+    """Merge event dicts into the store, newest wins on a repeated key.
+
+    Same contract as merge_series: adapters re-poll a recent window every
+    run, so this has to be idempotent or the same filing accumulates
+    duplicates on every cron.
+    """
+    by_key = {event_key(e): e for e in store["events"].get(instrument_id, [])}
+    for event in new_events:
+        by_key[event_key(event)] = event
+    merged = sorted(
+        by_key.values(), key=lambda e: (e.get("date") or "", e.get("kind") or "")
+    )
+    store["events"][instrument_id] = merged[-MAX_EVENTS:]
+
+
+def save_events(store):
+    store["updated"] = date.today().isoformat()
+    path = os.path.join(DATA_DIR, "events.json")
+    with open(path, "w") as f:
+        json.dump(store, f, separators=(",", ":"))
+    total = sum(len(v) for v in store["events"].values())
+    print(f"wrote events.json ({len(store['events'])} instruments, {total} events)")
