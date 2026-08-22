@@ -81,9 +81,22 @@ CODE_LABELS = {
 # --------------------------------------------------------------------------
 
 def user_agent():
-    """SEC wants "Name contact@domain". A placeholder answers today, but the
-    policy expects a real address - set SEC_CONTACT in the workflow."""
-    return os.environ.get("SEC_CONTACT") or DEFAULT_CONTACT
+    """The User-Agent SEC sees. Set SEC_CONTACT to a real contact address.
+
+    SEC refuses any User-Agent with no contact address in it (and refuses
+    unroutable ones such as users.noreply.github.com). A bare email is
+    accepted, which is the obvious thing to put in the variable, so that
+    case is normalised to "flow-watch <address>" - their guidance asks for
+    the tool to be named alongside the address.
+    """
+    raw = (os.environ.get("SEC_CONTACT") or "").strip()
+    if not raw:
+        return DEFAULT_CONTACT
+    if "@" not in raw:
+        print(f"sec_form4: SEC_CONTACT ({raw!r}) names no contact address - "
+              "SEC will reject this with 403", file=sys.stderr)
+        return raw
+    return raw if " " in raw else f"flow-watch {raw}"
 
 
 def fetch(url, timeout=30):

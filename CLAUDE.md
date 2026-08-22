@@ -44,8 +44,9 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   instrument still refreshes daily - the 23rd starts the rotation and
   everything slows down. Check this before adding instruments.
 - SEC needs a User-Agent naming a contact address; it rejects unroutable
-  ones, users.noreply.github.com among them. sec_form4.py reads SEC_CONTACT
-  and falls back to a placeholder. Set the repo variable to a real address.
+  ones, users.noreply.github.com among them. A bare address is accepted, so
+  sec_form4.py normalises SEC_CONTACT to "flow-watch <address>" and falls
+  back to a placeholder. Set the repo variable to a real address.
 - LSE instruments quote in pence: currency "GBX" in meta.json, scaled /100
   where flows are computed in pounds. Preserve this.
 - Yahoo (yfinance) sometimes rate-limits GitHub runners - ETF flow failures

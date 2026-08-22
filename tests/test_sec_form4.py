@@ -168,16 +168,36 @@ class MalformedInputTest(unittest.TestCase):
 
 
 class UserAgentTest(unittest.TestCase):
+    def setUp(self):
+        self._saved = os.environ.pop("SEC_CONTACT", None)
+
+    def tearDown(self):
+        os.environ.pop("SEC_CONTACT", None)
+        if self._saved is not None:
+            os.environ["SEC_CONTACT"] = self._saved
+
     def test_env_override_wins(self):
         os.environ["SEC_CONTACT"] = "flow-watch someone@example.com"
-        try:
-            self.assertEqual(sf.user_agent(), "flow-watch someone@example.com")
-        finally:
-            del os.environ["SEC_CONTACT"]
+        self.assertEqual(sf.user_agent(), "flow-watch someone@example.com")
+
+    def test_a_bare_email_gets_the_tool_name(self):
+        """The obvious thing to put in the variable is just an address."""
+        os.environ["SEC_CONTACT"] = "someone@example.com"
+        self.assertEqual(sf.user_agent(), "flow-watch someone@example.com")
+
+    def test_whitespace_only_falls_back(self):
+        os.environ["SEC_CONTACT"] = "   "
+        self.assertEqual(sf.user_agent(), sf.DEFAULT_CONTACT)
+
+    def test_value_with_no_address_is_warned_about(self):
+        """SEC answers 403 to a User-Agent with no contact in it."""
+        os.environ["SEC_CONTACT"] = "flow-watch"
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(sf.user_agent(), "flow-watch")
+        self.assertIn("403", err.getvalue())
 
     def test_default_is_a_contactable_shape(self):
         """SEC rejects a User-Agent that does not name a contact address."""
-        os.environ.pop("SEC_CONTACT", None)
         self.assertIn("@", sf.user_agent())
 
 

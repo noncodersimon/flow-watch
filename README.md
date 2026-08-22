@@ -53,9 +53,11 @@ window still build a full series over time.
 - meta.json holds exactly 22 equity+ETF symbols against Alpha Vantage's 22
   calls per run, so everything refreshes daily. Adding a 23rd starts a
   rotation and slows every instrument down.
-- SEC wants a contact address in the User-Agent. Set the `SEC_CONTACT`
-  repository variable to a real address (Settings -> Secrets and variables ->
-  Actions -> Variables).
+- SEC wants a contact address in the User-Agent and answers 403 without one.
+  Set the `SEC_CONTACT` repository variable (Settings -> Secrets and variables
+  -> Actions -> Variables tab) to an address you actually monitor. The bare
+  address is enough - the adapter prefixes the tool name itself. Unroutable
+  addresses are refused, `users.noreply.github.com` among them.
 
 ## Roadmap
 
