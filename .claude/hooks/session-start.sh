@@ -1,10 +1,10 @@
 #!/bin/bash
 # SessionStart hook for Claude Code on the web.
 #
-# flow-watch has no build step and the test suite is stdlib-only, so the
-# only thing a fresh container is missing is yfinance - without it the
-# ETF flow adapter cannot be imported and its tests skip. Installing it
-# here means tests and checks work immediately in a web session.
+# flow-watch has no build step and the tests are stdlib-only, so the only
+# thing a fresh container is missing is yfinance. Nothing in the test suite
+# needs it, but adapters/etf_flows.py cannot be imported or run without it,
+# so installing it here means the adapter is debuggable straight away.
 set -euo pipefail
 
 # Local machines already have their own environment - only fix up remote.

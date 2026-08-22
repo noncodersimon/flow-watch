@@ -69,13 +69,12 @@ No build step, so there is nothing to compile - just serve the repo root.
 
 - ./serve.sh            - static preview on http://localhost:8000
 - ./check.sh            - full check: syntax + tests (run before every commit)
-- python3 -m unittest discover -s tests -v   - tests only
+- python3 -m unittest discover -s tests -t tests -v   - tests only
 
 Tests are stdlib unittest, no pip install needed, and never hit the network.
-They cover the pure helpers in adapters/common.py and validate that every file
-in /data matches the documented store shape and agrees with meta.json. Adapter
-fetch functions are deliberately not tested - they are thin wrappers over live
-APIs, and mocking them would test the mock.
+Scope is deliberately narrow: they validate that what the adapters committed
+to /data matches the documented store shape and agrees with meta.json. Adapter
+logic is not unit tested - see the decision log for why.
 
 Only adapters need the runtime dependency: pip install -r requirements.txt.
 
@@ -124,6 +123,17 @@ Not a bug. Commit e316a70 shipped an early etf_flows.py; the bot run fa91e5d
 wrote etf_flow.json and etf_flow_pct.json from it. Commit 9233c6b then
 rewrote the adapter to add the shares-outstanding method and the etf_shares
 audit store, and no run has happened since. The next Actions run populates it.
+
+### 2026-08-22 - Test scope trimmed to /data integrity only
+Narrows the two entries above rather than reversing them. Dropped the
+common.py helper tests and the adapter compile/import tests; kept the ~20
+that validate /data and meta.json. Reason: this early the project is one
+person iterating fast, and tests over internal pure functions mostly slow
+that down. The /data tests stay because the fetch workflow commits
+unattended on a cron, so nothing else is watching what lands. Adapter syntax
+is still checked by py_compile in check.sh, just not as a unit test. If
+common.py starts changing often the merge_series tests are worth restoring -
+they are in git history at commit d904319.
 
 ## Current state (Aug 2026, v0.2)
 
