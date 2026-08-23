@@ -30,18 +30,23 @@ Two things to watch, both handled below:
     and the merge means a missed run costs freshness, not history.
 """
 
+import json
+import os
 import sys
 import time
 
 import yfinance as yf
 
-from common import (load_meta, load_store, merge_series, save_store,
+from common import (DATA_DIR, load_meta, load_store, merge_series, save_store,
                     rolling_mean)
 
 HISTORY_PERIOD = "5y"   # MAX_POINTS in common.py caps the stored series anyway
 CHUNK = 12              # tickers per download call
 PAUSE_SECONDS = 2.0
 UNIT_JUMP = 20.0        # a bigger move than this on the last close is a unit change, not a price
+
+# Yahoo's currency codes for the ones meta.json uses. "GBp" is pence.
+YAHOO_CURRENCY = {"GBp": "GBX", "GBX": "GBX", "GBP": "GBP", "USD": "USD"}
 
 
 def yahoo_symbol(inst):
@@ -109,6 +114,26 @@ def unit_change(existing_points, new_points):
     return factor >= UNIT_JUMP
 
 
+def currency_matches(meta_currency, yahoo_currency):
+    """None = could not verify; True/False = verified against Yahoo.
+
+    The pence/pounds label cannot be inferred from prices alone - 47.14 is a
+    fine number in either unit - so a new instrument's label is checked
+    against what Yahoo itself reports before its first points are merged.
+    Existing series are protected by the 20x unit-change guard instead.
+    """
+    mapped = YAHOO_CURRENCY.get((yahoo_currency or "").strip() or None)
+    if mapped is None:
+        return None
+    return mapped == meta_currency
+
+
+def fetch_currency(symbol):
+    """Thin network wrapper - Yahoo's reported trade currency for a symbol."""
+    info = yf.Ticker(symbol).fast_info
+    return info.get("currency")
+
+
 def fetch_frame(symbols, period=HISTORY_PERIOD):
     """Thin wrapper over the one network call."""
     return yf.download(
@@ -133,6 +158,7 @@ def main():
     ratio_store = load_store("volume_ratio")
 
     fetched = 0
+    mismatches, no_data = [], []
     for group in chunks(sorted(by_symbol), CHUNK):
         try:
             frame = fetch_frame(group)
@@ -145,8 +171,30 @@ def main():
             closes, volumes = frame_to_series(frame, symbol)
             if not closes:
                 print(f"  {inst['id']} ({symbol}): no data", file=sys.stderr)
+                no_data.append(inst["id"])
                 continue
             existing = price_store["series"].get(inst["id"], [])
+            if not existing:
+                # First points for this instrument: verify the meta.json
+                # currency label against Yahoo before anything is merged. A
+                # wrong label shows pounds as pence and mis-scales ETF flows,
+                # and once merged it looks exactly like data.
+                try:
+                    reported = fetch_currency(symbol)
+                except Exception as e:  # noqa: BLE001
+                    reported, e_note = None, e
+                verdict = currency_matches(inst.get("currency"), reported)
+                if verdict is False:
+                    print(f"  {inst['id']} ({symbol}): meta.json says "
+                          f"{inst.get('currency')} but Yahoo trades it in "
+                          f"{reported} - refusing to seed until meta.json is "
+                          f"corrected", file=sys.stderr)
+                    mismatches.append({"id": inst["id"], "meta": inst.get("currency"),
+                                       "yahoo": reported})
+                    continue
+                if verdict is None:
+                    print(f"  {inst['id']} ({symbol}): currency could not be "
+                          f"verified - seeding on the meta.json label", file=sys.stderr)
             if unit_change(existing, closes):
                 print(f"  {inst['id']} ({symbol}): last close moved from "
                       f"{existing[-1][1]} to {closes[-1][1]} - looks like a "
@@ -172,7 +220,15 @@ def main():
     save_store("price", price_store)
     save_store("volume", volume_store)
     save_store("volume_ratio", ratio_store)
-    print(f"price_volume_yahoo: {fetched} of {len(by_symbol)} instruments updated")
+
+    # health.json makes the failures loud: check.yml runs the test suite after
+    # every fetch, and a currency mismatch fails a test there, so a wrong
+    # label in meta.json turns CI red instead of quietly showing wrong prices.
+    with open(os.path.join(DATA_DIR, "health.json"), "w") as f:
+        json.dump({"currency_mismatches": mismatches, "no_data": sorted(no_data)},
+                  f, separators=(",", ":"))
+    print(f"price_volume_yahoo: {fetched} of {len(by_symbol)} instruments updated, "
+          f"{len(mismatches)} currency mismatch(es), {len(no_data)} with no data")
 
 
 if __name__ == "__main__":

@@ -177,7 +177,7 @@ def headline_kind(headline):
 
 
 _SUFFIXES = re.compile(
-    r"(?i)\b(p\.?l\.?c|plc|limited|ltd|group|holdings?|incorporated|inc|company|the)\b"
+    r"(?i)\b(p\.?l\.?c|plc|limited|ltd|group|holdings?|incorporated|inc|company|the|ag|sa|nv|se|corp|corporation)\b"
 )
 
 

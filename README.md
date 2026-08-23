@@ -54,6 +54,11 @@ sources are daily bars.
 - Price and volume come from Yahoo via yfinance. No per-day quota, so the
   instrument list is not capped, but Yahoo is unofficial and rate-limits at
   times. Failures are per-chunk and non-fatal.
+- The universe is the FTSE 100, the S&P 100 and ~68 LSE-listed ETFs/ETCs.
+  The daily fetch takes roughly an hour, most of it politeness pauses
+  against Investegate for the 100 UK names.
+- A new instrument's currency label is verified against Yahoo before its
+  first points merge; mismatches land in data/health.json and fail CI.
 - CFTC COT data is weekly (published Fridays, data as of Tuesday).
 - LSE prices are in pence (GBX) from Yahoo, as they were from Alpha Vantage.
   A 20x jump in an instrument's last close is treated as a change of units and

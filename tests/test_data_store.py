@@ -149,16 +149,21 @@ class MetaTest(unittest.TestCase):
             with self.subTest(instrument=inst["id"]):
                 self.assertIn(inst["currency"], {"GBX", "GBP", "USD"})
 
-    def test_lse_lines_are_gbx_or_gbp_not_assumed_pence(self):
-        """This used to assert every .LON instrument was GBX, which was wrong
-        and locked in a real bug: LSE quotes ordinary shares in pence but
-        quotes many ETFs in whole pounds. VUKE at 47 is 47 pounds, not 47
-        pence, and labelling it GBX both printed "47.14p" and would have
-        divided its ETF flow by 100."""
+    def test_lse_lines_carry_a_real_quote_currency(self):
+        """This has been wrong twice, each time by assuming a blanket rule.
+        First it asserted every .LON instrument was GBX, which mislabelled
+        the pound-quoted ETFs (VUKE at 47 is 47 pounds, not 47 pence). Then
+        it asserted GBX-or-GBP, which is still not true: plenty of LSE ETF
+        and ETC lines trade in dollars - the WisdomTree commodity ETCs and
+        iShares USD lines among them. The honest rule is that the label must
+        be a currency the LSE actually quotes lines in, and the seed-time
+        check in price_volume_yahoo.py verifies each label against what
+        Yahoo reports, so a wrong guess is refused and surfaced rather than
+        merged."""
         for inst in self.meta["instruments"]:
             if inst["id"].endswith(".LON"):
                 with self.subTest(instrument=inst["id"]):
-                    self.assertIn(inst["currency"], {"GBX", "GBP"})
+                    self.assertIn(inst["currency"], {"GBX", "GBP", "USD"})
 
     def test_uk_equities_are_still_priced_in_pence(self):
         # the pence convention does hold for ordinary shares, and that is what
@@ -311,6 +316,21 @@ class CacheBustingTest(unittest.TestCase):
             with self.subTest(asset=asset):
                 self.assertNotRegex(self.html, rf'"{re.escape(asset)}"',
                                     f"{asset} is loaded without a version query")
+
+
+class HealthTest(unittest.TestCase):
+    """price_volume_yahoo.py writes data/health.json on every run. A currency
+    mismatch there means meta.json labels an instrument in a currency Yahoo
+    says it does not trade in - the adapter refuses to seed it, and this test
+    turns CI red (check.yml runs after every fetch) so the wrong label gets
+    fixed instead of quietly showing pounds as pence."""
+
+    def test_no_currency_mismatches(self):
+        health = load("health.json")
+        if health is None:
+            self.skipTest("no fetch has written health.json yet")
+        self.assertEqual(health.get("currency_mismatches", []), [],
+                         "fix the currency in meta.json for these instruments")
 
 
 class SummaryTest(unittest.TestCase):

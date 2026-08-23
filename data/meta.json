@@ -117,6 +117,712 @@
       "currency": "GBX"
     },
     {
+      "id": "III.LON",
+      "name": "3i",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ABDN.LON",
+      "name": "Aberdeen Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ADM.LON",
+      "name": "Admiral Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "AAF.LON",
+      "name": "Airtel Africa",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Telecoms",
+      "currency": "GBX"
+    },
+    {
+      "id": "ALW.LON",
+      "name": "Alliance Witan",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "AAL.LON",
+      "name": "Anglo American plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ANTO.LON",
+      "name": "Antofagasta plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ABF.LON",
+      "name": "Associated British Foods",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "AUTO.LON",
+      "name": "Autotrader Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "AV.LON",
+      "name": "Aviva",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BAB.LON",
+      "name": "Babcock International",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BA.LON",
+      "name": "BAE Systems",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BTRW.LON",
+      "name": "Barratt Redrow",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "BEZ.LON",
+      "name": "Beazley",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BATS.LON",
+      "name": "British American Tobacco",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "BLND.LON",
+      "name": "British Land",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Real Estate",
+      "currency": "GBX"
+    },
+    {
+      "id": "BTA.LON",
+      "name": "BT Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Telecoms",
+      "currency": "GBX",
+      "yahoo": "BT-A.L",
+      "rns": "BT.A"
+    },
+    {
+      "id": "BNZL.LON",
+      "name": "Bunzl",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BRBY.LON",
+      "name": "Burberry Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "CNA.LON",
+      "name": "Centrica",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "CCEP.LON",
+      "name": "Coca-Cola Europacific Partners",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "CCH.LON",
+      "name": "Coca-Cola HBC",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "CPG.LON",
+      "name": "Compass Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "CCC.LON",
+      "name": "Computacenter",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Technology",
+      "currency": "GBX"
+    },
+    {
+      "id": "CTEC.LON",
+      "name": "Convatec",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Healthcare",
+      "currency": "GBX"
+    },
+    {
+      "id": "CRDA.LON",
+      "name": "Croda International",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "DCC.LON",
+      "name": "DCC Energy",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "DGE.LON",
+      "name": "Diageo",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "DPLM.LON",
+      "name": "Diploma",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "EDV.LON",
+      "name": "Endeavour Mining",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "ENT.LON",
+      "name": "Entain",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "EXPN.LON",
+      "name": "Experian",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "FCIT.LON",
+      "name": "F & C Investment Trust",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "FRES.LON",
+      "name": "Fresnillo plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "GAW.LON",
+      "name": "Games Workshop",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "GLEN.LON",
+      "name": "Glencore",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Materials",
+      "currency": "GBX"
+    },
+    {
+      "id": "HLN.LON",
+      "name": "Haleon",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Healthcare",
+      "currency": "GBX"
+    },
+    {
+      "id": "HLMA.LON",
+      "name": "Halma plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Technology",
+      "currency": "GBX"
+    },
+    {
+      "id": "HSX.LON",
+      "name": "Hiscox",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "HWDN.LON",
+      "name": "Howdens Joinery",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "ICG.LON",
+      "name": "ICG",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "IGG.LON",
+      "name": "IG Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "IHG.LON",
+      "name": "IHG Hotels & Resorts",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "IMI.LON",
+      "name": "IMI",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "IMB.LON",
+      "name": "Imperial Brands",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "INF.LON",
+      "name": "Informa",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "IAG.LON",
+      "name": "International Airlines Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "ITRK.LON",
+      "name": "Intertek",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "INVP.LON",
+      "name": "Investec",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "JD.LON",
+      "name": "JD Sports",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "BGEO.LON",
+      "name": "Lion Finance Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "KGF.LON",
+      "name": "Kingfisher plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "LAND.LON",
+      "name": "Land Securities",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Real Estate",
+      "currency": "GBX"
+    },
+    {
+      "id": "LGEN.LON",
+      "name": "Legal & General",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "LLOY.LON",
+      "name": "Lloyds Banking Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "LMP.LON",
+      "name": "LondonMetric Property",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Real Estate",
+      "currency": "GBX"
+    },
+    {
+      "id": "MNG.LON",
+      "name": "M&G",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "MKS.LON",
+      "name": "Marks & Spencer",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "MRO.LON",
+      "name": "Melrose Industries",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "MTLN.LON",
+      "name": "Metlen Energy & Metals",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "NG.LON",
+      "name": "National Grid plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "NWG.LON",
+      "name": "NatWest Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "NXT.LON",
+      "name": "Next plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "PSON.LON",
+      "name": "Pearson plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "PSH.LON",
+      "name": "Pershing Square Holdings",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "PSN.LON",
+      "name": "Persimmon",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "PCT.LON",
+      "name": "Polar Capital Technology Trust",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "PRU.LON",
+      "name": "Prudential plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "RKT.LON",
+      "name": "Reckitt",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
+      "id": "RTO.LON",
+      "name": "Rentokil Initial",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "RR.LON",
+      "name": "Rolls-Royce Holdings",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SGE.LON",
+      "name": "Sage Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Technology",
+      "currency": "GBX"
+    },
+    {
+      "id": "SBRY.LON",
+      "name": "Sainsbury's",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Staples",
+      "currency": "GBX"
+    },
+    {
+      "id": "SDR.LON",
+      "name": "Schroders",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SMT.LON",
+      "name": "Scottish Mortgage Investment Trust",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SGRO.LON",
+      "name": "Segro",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Real Estate",
+      "currency": "GBX"
+    },
+    {
+      "id": "SVT.LON",
+      "name": "Severn Trent",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "SMIN.LON",
+      "name": "Smiths Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SN.LON",
+      "name": "Smith & Nephew",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Healthcare",
+      "currency": "GBX"
+    },
+    {
+      "id": "SPX.LON",
+      "name": "Spirax Group",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SSE.LON",
+      "name": "SSE plc",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "STAN.LON",
+      "name": "Standard Chartered",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "SDLF.LON",
+      "name": "Standard Life",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "STJ.LON",
+      "name": "St. James's Place",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Financials",
+      "currency": "GBX"
+    },
+    {
+      "id": "BBOX.LON",
+      "name": "Tritax Big Box REIT",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Real Estate",
+      "currency": "GBX"
+    },
+    {
+      "id": "UU.LON",
+      "name": "United Utilities",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Utilities",
+      "currency": "GBX"
+    },
+    {
+      "id": "WEIR.LON",
+      "name": "Weir",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Industrials",
+      "currency": "GBX"
+    },
+    {
+      "id": "WTB.LON",
+      "name": "Whitbread",
+      "type": "equity",
+      "region": "UK",
+      "sector": "Consumer Discretionary",
+      "currency": "GBX"
+    },
+    {
       "id": "AAPL",
       "name": "Apple",
       "type": "equity",
@@ -151,6 +857,871 @@
       "sector": "Financials",
       "currency": "USD",
       "cik": "0000019617"
+    },
+    {
+      "id": "ABBV",
+      "name": "AbbVie",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0001551152"
+    },
+    {
+      "id": "ABT",
+      "name": "Abbott Laboratories",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000001800"
+    },
+    {
+      "id": "ACN",
+      "name": "Accenture",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001467373"
+    },
+    {
+      "id": "ADBE",
+      "name": "Adobe Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000796343"
+    },
+    {
+      "id": "AMAT",
+      "name": "Applied Materials",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000006951"
+    },
+    {
+      "id": "AMD",
+      "name": "Advanced Micro Devices",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000002488"
+    },
+    {
+      "id": "AMGN",
+      "name": "Amgen",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000318154"
+    },
+    {
+      "id": "AMT",
+      "name": "American Tower",
+      "type": "equity",
+      "region": "US",
+      "sector": "Real Estate",
+      "currency": "USD",
+      "cik": "0001053507"
+    },
+    {
+      "id": "AMZN",
+      "name": "Amazon",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0001018724"
+    },
+    {
+      "id": "AVGO",
+      "name": "Broadcom",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001730168"
+    },
+    {
+      "id": "AXP",
+      "name": "American Express",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000004962"
+    },
+    {
+      "id": "BA",
+      "name": "Boeing",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000012927"
+    },
+    {
+      "id": "BAC",
+      "name": "Bank of America",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000070858"
+    },
+    {
+      "id": "BKNG",
+      "name": "Booking Holdings",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0001075531"
+    },
+    {
+      "id": "BLK",
+      "name": "BlackRock",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0002012383"
+    },
+    {
+      "id": "BMY",
+      "name": "Bristol Myers Squibb",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000014272"
+    },
+    {
+      "id": "BNY",
+      "name": "BNY Mellon",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0001390777"
+    },
+    {
+      "id": "BRK.B",
+      "name": "Berkshire Hathaway(Class B)",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0001067983",
+      "yahoo": "BRK-B"
+    },
+    {
+      "id": "C",
+      "name": "Citigroup",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000831001"
+    },
+    {
+      "id": "CAT",
+      "name": "Caterpillar Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000018230"
+    },
+    {
+      "id": "CL",
+      "name": "Colgate-Palmolive",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000021665"
+    },
+    {
+      "id": "CMCSA",
+      "name": "Comcast",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001166691"
+    },
+    {
+      "id": "COF",
+      "name": "Capital One",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000927628"
+    },
+    {
+      "id": "COP",
+      "name": "ConocoPhillips",
+      "type": "equity",
+      "region": "US",
+      "sector": "Energy",
+      "currency": "USD",
+      "cik": "0001163165"
+    },
+    {
+      "id": "COST",
+      "name": "Costco",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000909832"
+    },
+    {
+      "id": "CRM",
+      "name": "Salesforce",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001108524"
+    },
+    {
+      "id": "CSCO",
+      "name": "Cisco",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000858877"
+    },
+    {
+      "id": "CVS",
+      "name": "CVS Health",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000064803"
+    },
+    {
+      "id": "CVX",
+      "name": "Chevron Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Energy",
+      "currency": "USD",
+      "cik": "0000093410"
+    },
+    {
+      "id": "DE",
+      "name": "Deere & Company",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000315189"
+    },
+    {
+      "id": "DHR",
+      "name": "Danaher Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000313616"
+    },
+    {
+      "id": "DIS",
+      "name": "Walt Disney Company (The)",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001744489"
+    },
+    {
+      "id": "DUK",
+      "name": "Duke Energy",
+      "type": "equity",
+      "region": "US",
+      "sector": "Utilities",
+      "currency": "USD",
+      "cik": "0001326160"
+    },
+    {
+      "id": "EMR",
+      "name": "Emerson Electric",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000032604"
+    },
+    {
+      "id": "FDX",
+      "name": "FedEx",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0001048911"
+    },
+    {
+      "id": "GD",
+      "name": "General Dynamics",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000040533"
+    },
+    {
+      "id": "GE",
+      "name": "GE Aerospace",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000040545"
+    },
+    {
+      "id": "GEV",
+      "name": "GE Vernova",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0001996810"
+    },
+    {
+      "id": "GILD",
+      "name": "Gilead Sciences",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000882095"
+    },
+    {
+      "id": "GM",
+      "name": "General Motors",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0001467858"
+    },
+    {
+      "id": "GOOGL",
+      "name": "Alphabet Inc.(Class A)",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001652044"
+    },
+    {
+      "id": "GS",
+      "name": "Goldman Sachs",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000886982"
+    },
+    {
+      "id": "HD",
+      "name": "Home Depot",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0000354950"
+    },
+    {
+      "id": "HONA",
+      "name": "Honeywell Aerospace",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0002089271"
+    },
+    {
+      "id": "IBM",
+      "name": "IBM",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000051143"
+    },
+    {
+      "id": "INTC",
+      "name": "Intel",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000050863"
+    },
+    {
+      "id": "INTU",
+      "name": "Intuit",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000896878"
+    },
+    {
+      "id": "ISRG",
+      "name": "Intuitive Surgical",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0001035267"
+    },
+    {
+      "id": "JNJ",
+      "name": "Johnson & Johnson",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000200406"
+    },
+    {
+      "id": "KO",
+      "name": "Coca-Cola Company (The)",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000021344"
+    },
+    {
+      "id": "LIN",
+      "name": "Linde plc",
+      "type": "equity",
+      "region": "US",
+      "sector": "Materials",
+      "currency": "USD",
+      "cik": "0001707925"
+    },
+    {
+      "id": "LLY",
+      "name": "Eli Lilly and Company",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000059478"
+    },
+    {
+      "id": "LMT",
+      "name": "Lockheed Martin",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000936468"
+    },
+    {
+      "id": "LOW",
+      "name": "Lowe's",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0000060667"
+    },
+    {
+      "id": "LRCX",
+      "name": "Lam Research",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000707549"
+    },
+    {
+      "id": "MA",
+      "name": "Mastercard",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0001141391"
+    },
+    {
+      "id": "MCD",
+      "name": "McDonald's",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0000063908"
+    },
+    {
+      "id": "MDLZ",
+      "name": "Mondel\u0113z International",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0001103982"
+    },
+    {
+      "id": "MDT",
+      "name": "Medtronic",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0001613103"
+    },
+    {
+      "id": "META",
+      "name": "Meta Platforms",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001326801"
+    },
+    {
+      "id": "MMM",
+      "name": "3M",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000066740"
+    },
+    {
+      "id": "MO",
+      "name": "Altria",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000764180"
+    },
+    {
+      "id": "MRK",
+      "name": "Merck & Co.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000310158"
+    },
+    {
+      "id": "MS",
+      "name": "Morgan Stanley",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000895421"
+    },
+    {
+      "id": "MU",
+      "name": "Micron Technology",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000723125"
+    },
+    {
+      "id": "NEE",
+      "name": "NextEra Energy",
+      "type": "equity",
+      "region": "US",
+      "sector": "Utilities",
+      "currency": "USD",
+      "cik": "0000753308"
+    },
+    {
+      "id": "NFLX",
+      "name": "Netflix, Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001065280"
+    },
+    {
+      "id": "NKE",
+      "name": "Nike, Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0000320187"
+    },
+    {
+      "id": "NOW",
+      "name": "ServiceNow",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001373715"
+    },
+    {
+      "id": "ORCL",
+      "name": "Oracle Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001341439"
+    },
+    {
+      "id": "PEP",
+      "name": "PepsiCo",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000077476"
+    },
+    {
+      "id": "PFE",
+      "name": "Pfizer",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000078003"
+    },
+    {
+      "id": "PG",
+      "name": "Procter & Gamble",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000080424"
+    },
+    {
+      "id": "PLTR",
+      "name": "Palantir Technologies",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0001321655"
+    },
+    {
+      "id": "PM",
+      "name": "Philip Morris International",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0001413329"
+    },
+    {
+      "id": "QCOM",
+      "name": "Qualcomm",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000804328"
+    },
+    {
+      "id": "RTX",
+      "name": "RTX Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000101829"
+    },
+    {
+      "id": "SBUX",
+      "name": "Starbucks",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0000829224"
+    },
+    {
+      "id": "SCHW",
+      "name": "Charles Schwab Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000316709"
+    },
+    {
+      "id": "SO",
+      "name": "Southern Company",
+      "type": "equity",
+      "region": "US",
+      "sector": "Utilities",
+      "currency": "USD",
+      "cik": "0000092122"
+    },
+    {
+      "id": "SPG",
+      "name": "Simon Property Group",
+      "type": "equity",
+      "region": "US",
+      "sector": "Real Estate",
+      "currency": "USD",
+      "cik": "0001063761"
+    },
+    {
+      "id": "T",
+      "name": "AT&T",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0000732717"
+    },
+    {
+      "id": "TMO",
+      "name": "Thermo Fisher Scientific",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000097745"
+    },
+    {
+      "id": "TMUS",
+      "name": "T-Mobile US",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0001283699"
+    },
+    {
+      "id": "TSLA",
+      "name": "Tesla, Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Discretionary",
+      "currency": "USD",
+      "cik": "0001318605"
+    },
+    {
+      "id": "TXN",
+      "name": "Texas Instruments",
+      "type": "equity",
+      "region": "US",
+      "sector": "Information Technology",
+      "currency": "USD",
+      "cik": "0000097476"
+    },
+    {
+      "id": "UBER",
+      "name": "Uber",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0001543151"
+    },
+    {
+      "id": "UNH",
+      "name": "UnitedHealth Group",
+      "type": "equity",
+      "region": "US",
+      "sector": "Health Care",
+      "currency": "USD",
+      "cik": "0000731766"
+    },
+    {
+      "id": "UNP",
+      "name": "Union Pacific Corporation",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0000100885"
+    },
+    {
+      "id": "UPS",
+      "name": "United Parcel Service",
+      "type": "equity",
+      "region": "US",
+      "sector": "Industrials",
+      "currency": "USD",
+      "cik": "0001090727"
+    },
+    {
+      "id": "USB",
+      "name": "U.S. Bancorp",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000036104"
+    },
+    {
+      "id": "V",
+      "name": "Visa Inc.",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0001403161"
+    },
+    {
+      "id": "VZ",
+      "name": "Verizon",
+      "type": "equity",
+      "region": "US",
+      "sector": "Communication Services",
+      "currency": "USD",
+      "cik": "0000732712"
+    },
+    {
+      "id": "WFC",
+      "name": "Wells Fargo",
+      "type": "equity",
+      "region": "US",
+      "sector": "Financials",
+      "currency": "USD",
+      "cik": "0000072971"
+    },
+    {
+      "id": "WMT",
+      "name": "Walmart",
+      "type": "equity",
+      "region": "US",
+      "sector": "Consumer Staples",
+      "currency": "USD",
+      "cik": "0000104169"
+    },
+    {
+      "id": "XOM",
+      "name": "ExxonMobil",
+      "type": "equity",
+      "region": "US",
+      "sector": "Energy",
+      "currency": "USD",
+      "cik": "0002115436"
     },
     {
       "id": "VUKE.LON",
@@ -241,6 +1812,528 @@
       "sector": "Emerging Equity",
       "currency": "GBP",
       "yahoo": "VFEM.L"
+    },
+    {
+      "id": "ISF.LON",
+      "name": "iShares Core FTSE 100",
+      "type": "etf",
+      "region": "UK",
+      "sector": "UK Equity",
+      "currency": "GBX",
+      "yahoo": "ISF.L"
+    },
+    {
+      "id": "VMID.LON",
+      "name": "Vanguard FTSE 250",
+      "type": "etf",
+      "region": "UK",
+      "sector": "UK Equity",
+      "currency": "GBP",
+      "yahoo": "VMID.L"
+    },
+    {
+      "id": "FTAL.LON",
+      "name": "SPDR FTSE UK All Share",
+      "type": "etf",
+      "region": "UK",
+      "sector": "UK Equity",
+      "currency": "GBP",
+      "yahoo": "FTAL.L"
+    },
+    {
+      "id": "VGOV.LON",
+      "name": "Vanguard UK Gilt",
+      "type": "etf",
+      "region": "UK",
+      "sector": "Gilts",
+      "currency": "GBP",
+      "yahoo": "VGOV.L"
+    },
+    {
+      "id": "IGLT.LON",
+      "name": "iShares Core UK Gilts",
+      "type": "etf",
+      "region": "UK",
+      "sector": "Gilts",
+      "currency": "GBX",
+      "yahoo": "IGLT.L"
+    },
+    {
+      "id": "INXG.LON",
+      "name": "iShares Index-Linked Gilts",
+      "type": "etf",
+      "region": "UK",
+      "sector": "Gilts",
+      "currency": "GBX",
+      "yahoo": "INXG.L"
+    },
+    {
+      "id": "SLXX.LON",
+      "name": "iShares Corp Bond",
+      "type": "etf",
+      "region": "UK",
+      "sector": "Corporate Bonds",
+      "currency": "GBX",
+      "yahoo": "SLXX.L"
+    },
+    {
+      "id": "IUKP.LON",
+      "name": "iShares UK Property",
+      "type": "etf",
+      "region": "UK",
+      "sector": "Property",
+      "currency": "GBX",
+      "yahoo": "IUKP.L"
+    },
+    {
+      "id": "CSP1.LON",
+      "name": "iShares Core S&P 500",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Equity",
+      "currency": "GBP",
+      "yahoo": "CSP1.L"
+    },
+    {
+      "id": "ISP6.LON",
+      "name": "iShares S&P SmallCap 600",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Equity",
+      "currency": "GBX",
+      "yahoo": "ISP6.L"
+    },
+    {
+      "id": "EQQQ.LON",
+      "name": "Invesco Nasdaq-100",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Tech",
+      "currency": "GBP",
+      "yahoo": "EQQQ.L"
+    },
+    {
+      "id": "IBTS.LON",
+      "name": "iShares Treasury 1-3yr",
+      "type": "etf",
+      "region": "US",
+      "sector": "Treasuries",
+      "currency": "GBX",
+      "yahoo": "IBTS.L"
+    },
+    {
+      "id": "IBTM.LON",
+      "name": "iShares Treasury 7-10yr",
+      "type": "etf",
+      "region": "US",
+      "sector": "Treasuries",
+      "currency": "GBX",
+      "yahoo": "IBTM.L"
+    },
+    {
+      "id": "IDTL.LON",
+      "name": "iShares Treasury 20yr+",
+      "type": "etf",
+      "region": "US",
+      "sector": "Treasuries",
+      "currency": "GBX",
+      "yahoo": "IDTL.L"
+    },
+    {
+      "id": "ITPS.LON",
+      "name": "iShares TIPS",
+      "type": "etf",
+      "region": "US",
+      "sector": "Treasuries",
+      "currency": "GBX",
+      "yahoo": "ITPS.L"
+    },
+    {
+      "id": "IUIT.LON",
+      "name": "iShares S&P 500 Info Tech",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUIT.L"
+    },
+    {
+      "id": "IUHC.LON",
+      "name": "iShares S&P 500 Health Care",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUHC.L"
+    },
+    {
+      "id": "IUFS.LON",
+      "name": "iShares S&P 500 Financials",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUFS.L"
+    },
+    {
+      "id": "IUES.LON",
+      "name": "iShares S&P 500 Energy",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUES.L"
+    },
+    {
+      "id": "IUCD.LON",
+      "name": "iShares S&P 500 Consumer Disc",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUCD.L"
+    },
+    {
+      "id": "IUCS.LON",
+      "name": "iShares S&P 500 Consumer Staples",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUCS.L"
+    },
+    {
+      "id": "IUIS.LON",
+      "name": "iShares S&P 500 Industrials",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUIS.L"
+    },
+    {
+      "id": "IUCM.LON",
+      "name": "iShares S&P 500 Comm Services",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUCM.L"
+    },
+    {
+      "id": "IUUS.LON",
+      "name": "iShares S&P 500 Utilities",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUUS.L"
+    },
+    {
+      "id": "IUMS.LON",
+      "name": "iShares S&P 500 Materials",
+      "type": "etf",
+      "region": "US",
+      "sector": "US Sectors",
+      "currency": "USD",
+      "yahoo": "IUMS.L"
+    },
+    {
+      "id": "NDIA.LON",
+      "name": "iShares MSCI India",
+      "type": "etf",
+      "region": "Asia",
+      "sector": "Country Equity",
+      "currency": "USD",
+      "yahoo": "NDIA.L"
+    },
+    {
+      "id": "FXC.LON",
+      "name": "iShares China Large Cap",
+      "type": "etf",
+      "region": "Asia",
+      "sector": "Country Equity",
+      "currency": "GBX",
+      "yahoo": "FXC.L"
+    },
+    {
+      "id": "ITWN.LON",
+      "name": "iShares MSCI Taiwan",
+      "type": "etf",
+      "region": "Asia",
+      "sector": "Country Equity",
+      "currency": "USD",
+      "yahoo": "ITWN.L"
+    },
+    {
+      "id": "IBZL.LON",
+      "name": "iShares MSCI Brazil",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "Emerging Equity",
+      "currency": "USD",
+      "yahoo": "IBZL.L"
+    },
+    {
+      "id": "IEEM.LON",
+      "name": "iShares MSCI Emerging Markets",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "Emerging Equity",
+      "currency": "USD",
+      "yahoo": "IEEM.L"
+    },
+    {
+      "id": "EMIM.LON",
+      "name": "iShares Core EM IMI",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "Emerging Equity",
+      "currency": "GBX",
+      "yahoo": "EMIM.L"
+    },
+    {
+      "id": "SEMB.LON",
+      "name": "iShares EM USD Sovereign Bond",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "EM Bonds",
+      "currency": "USD",
+      "yahoo": "SEMB.L"
+    },
+    {
+      "id": "IEML.LON",
+      "name": "iShares EM Local Govt Bond",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "EM Bonds",
+      "currency": "USD",
+      "yahoo": "IEML.L"
+    },
+    {
+      "id": "SWDA.LON",
+      "name": "iShares Core MSCI World",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Global Equity",
+      "currency": "GBP",
+      "yahoo": "SWDA.L"
+    },
+    {
+      "id": "VEVE.LON",
+      "name": "Vanguard FTSE Developed World",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Global Equity",
+      "currency": "GBP",
+      "yahoo": "VEVE.L"
+    },
+    {
+      "id": "VHYL.LON",
+      "name": "Vanguard All-World High Dividend",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Global Equity",
+      "currency": "GBP",
+      "yahoo": "VHYL.L"
+    },
+    {
+      "id": "WLDS.LON",
+      "name": "iShares MSCI World Small Cap",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Global Equity",
+      "currency": "GBP",
+      "yahoo": "WLDS.L"
+    },
+    {
+      "id": "VAGP.LON",
+      "name": "Vanguard Global Aggregate Bond",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Bonds",
+      "currency": "GBP",
+      "yahoo": "VAGP.L"
+    },
+    {
+      "id": "IWDP.LON",
+      "name": "iShares Developed Property Yield",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Property",
+      "currency": "GBX",
+      "yahoo": "IWDP.L"
+    },
+    {
+      "id": "INFR.LON",
+      "name": "iShares Global Infrastructure",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Infrastructure",
+      "currency": "GBX",
+      "yahoo": "INFR.L"
+    },
+    {
+      "id": "SSLN.LON",
+      "name": "iShares Physical Silver",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "GBX",
+      "yahoo": "SSLN.L"
+    },
+    {
+      "id": "SPLT.LON",
+      "name": "iShares Physical Platinum",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "GBX",
+      "yahoo": "SPLT.L"
+    },
+    {
+      "id": "BRNT.LON",
+      "name": "WisdomTree Brent Crude Oil",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "BRNT.L"
+    },
+    {
+      "id": "CRUD.LON",
+      "name": "WisdomTree WTI Crude Oil",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "CRUD.L"
+    },
+    {
+      "id": "NGAS.LON",
+      "name": "WisdomTree Natural Gas",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "NGAS.L"
+    },
+    {
+      "id": "COPA.LON",
+      "name": "WisdomTree Copper",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "COPA.L"
+    },
+    {
+      "id": "WEAT.LON",
+      "name": "WisdomTree Wheat",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "WEAT.L"
+    },
+    {
+      "id": "AIGC.LON",
+      "name": "WisdomTree Broad Commodities",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Commodities",
+      "currency": "USD",
+      "yahoo": "AIGC.L"
+    },
+    {
+      "id": "INRG.LON",
+      "name": "iShares Global Clean Energy",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "GBX",
+      "yahoo": "INRG.L"
+    },
+    {
+      "id": "SMGB.LON",
+      "name": "VanEck Semiconductor",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "SMGB.L"
+    },
+    {
+      "id": "RBOT.LON",
+      "name": "iShares Automation & Robotics",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "RBOT.L"
+    },
+    {
+      "id": "HEAL.LON",
+      "name": "iShares Healthcare Innovation",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "HEAL.L"
+    },
+    {
+      "id": "DGTL.LON",
+      "name": "iShares Digitalisation",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "DGTL.L"
+    },
+    {
+      "id": "WCLD.LON",
+      "name": "WisdomTree Cloud Computing",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "WCLD.L"
+    },
+    {
+      "id": "AIAI.LON",
+      "name": "WisdomTree Artificial Intelligence",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "AIAI.L"
+    },
+    {
+      "id": "NATO.LON",
+      "name": "HANetf Future of Defence",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "GBP",
+      "yahoo": "NATO.L"
+    },
+    {
+      "id": "GDX.LON",
+      "name": "VanEck Gold Miners",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "USD",
+      "yahoo": "GDX.L"
+    },
+    {
+      "id": "IH2O.LON",
+      "name": "iShares Global Water",
+      "type": "etf",
+      "region": "Global",
+      "sector": "Thematics",
+      "currency": "GBX",
+      "yahoo": "IH2O.L"
     },
     {
       "id": "COT.GOLD",

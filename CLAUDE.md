@@ -180,12 +180,14 @@ they are in git history at commit d904319.
 
 ## Current state (Aug 2026, v0.8)
 
-History is still thin in the repo: every series holds exactly 100 daily
-points (2026-03-31 onward), because there has only ever been one fetch run
-- a manual dispatch on 2026-08-22, before the US names existed and before
-the source switch. The cron is Mon-Sat and has never fired. The next run
-seeds five years from Yahoo for every instrument, including the four US
-equities, which currently have insider events but no price line.
+The universe is the full FTSE 100, the S&P 100 (minus GOOG - see the
+decision log) and 68 LSE-listed ETFs/ETCs alongside the six COT
+commodities: 274 instruments, 268 of them fetched from Yahoo. The
+2026-08-23 backfill seeded five years for the original 32; the ~240 added
+on 2026-08-23 seed on their first run, which also verifies each new
+instrument's currency label against Yahoo before merging anything (see
+data/health.json and the decision log). Expect the first run after the
+expansion to take about an hour, dominated by Investegate pacing.
 
 Live: price/volume/ratio (Yahoo via yfinance), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
@@ -545,3 +547,35 @@ and covered half a phone screen while following the finger. It now opens
 as just the date, and a tap on the plot switches it to full values and
 back. The formatter reads the flag at show time, so the toggle costs no
 re-render. Taps on the legend still do what legends do.
+
+### 2026-08-23 - The universe is FTSE 100 + S&P 100 + 68 curated ETFs
+Constituents were taken from Wikipedia (via a server-side fetch - the
+sandbox proxy blocks wikipedia.org) and CIKs from SEC's own
+company_tickers.json, so nothing was typed from memory. UK sectors are
+mapped from ICB names onto the coarse vocabulary the original twelve
+already used; US sectors are GICS as published. Ticker quirks are two:
+BT.A becomes id BTA.LON with rns "BT.A" and yahoo "BT-A.L", and BRK.B
+keeps its dot with yahoo "BRK-B". GOOG was dropped deliberately: it is the
+same company, CIK and insiders as GOOGL, so keeping both would fetch and
+attribute every Form 4 twice.
+
+"All ETFs" was scoped to a curated set rather than the ~2,000 LSE lines,
+which are mostly duplicate share classes and currency hedges. The wider
+tier chosen (~120) landed at 68: the set that could be named with
+confidence rather than padded with guessed tickers - a wrong ticker costs
+a silent hole, and adding a fund later is one meta.json entry. A wrong
+listing simply reports "no data" in the run log and data/health.json.
+
+### 2026-08-23 - New instruments verify their currency against Yahoo before seeding
+The pence/pounds label cannot be inferred from prices - 47.14 is a fine
+number in either unit - and the 20x unit-change guard only protects series
+that already exist. So the one unguarded moment was a NEW instrument with
+a wrong label, which would show pounds as pence and mis-scale ETF flows
+while looking exactly like data. price_volume_yahoo.py now checks Yahoo's
+reported trade currency (GBp meaning pence) on first seed, refuses the
+merge on a mismatch, and writes the result to data/health.json - where a
+test fails, and since check.yml runs after every fetch, a wrong label
+turns CI red instead of rendering quietly wrong. If Yahoo cannot be asked
+(rate limits), the instrument seeds on the meta.json label with a warning
+rather than stalling. This is what made seeding 58 ETFs with best-guess
+currencies safe: the guesses are policed by the source itself.

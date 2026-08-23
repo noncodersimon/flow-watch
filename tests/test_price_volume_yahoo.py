@@ -133,6 +133,29 @@ class UnitChangeGuardTest(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_DEPS, "yfinance/pandas not installed")
+@unittest.skipUnless(HAVE_DEPS, "yfinance/pandas not installed")
+class CurrencyVerificationTest(unittest.TestCase):
+    """Yahoo reports pence as "GBp". A new instrument's meta.json label is
+    checked against that before its first points merge - the one moment a
+    wrong pence/pounds label cannot be caught by the 20x guard, because there
+    is nothing to compare against yet."""
+
+    def test_agreement(self):
+        self.assertTrue(pv.currency_matches("GBX", "GBp"))
+        self.assertTrue(pv.currency_matches("GBP", "GBP"))
+        self.assertTrue(pv.currency_matches("USD", "USD"))
+
+    def test_the_pence_pounds_trap_is_caught(self):
+        self.assertFalse(pv.currency_matches("GBX", "GBP"))
+        self.assertFalse(pv.currency_matches("GBP", "GBp"))
+        self.assertFalse(pv.currency_matches("USD", "GBp"))
+
+    def test_unknown_or_missing_reports_are_unverifiable_not_failures(self):
+        self.assertIsNone(pv.currency_matches("GBX", None))
+        self.assertIsNone(pv.currency_matches("GBX", ""))
+        self.assertIsNone(pv.currency_matches("GBX", "EUR"))
+
+
 class ChunkTest(unittest.TestCase):
     def test_chunks_cover_everything_exactly_once(self):
         items = [str(n) for n in range(29)]
