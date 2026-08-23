@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.2";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -49,20 +49,18 @@ const state = {
   meta: null,
   summary: null,       // data/summary.json - latest values, no history
   docs: {},            // id -> data/instruments/<id>.json, fetched on demand
-  region: null,
   overlays: {},        // key -> on/off, remembered in localStorage
-  sort: { key: "volRatio", dir: -1 },
   chart: null,
 };
 
 /* ---------- data loading ----------
 
-   The screener reads data/summary.json alone: latest value per metric and
-   30-day event counts, about half a kilobyte gzipped. A chart then loads
-   that one instrument's file on demand and keeps it, so moving between
-   instruments costs one small request each and never the whole store.
-   History depth and the instrument count can both grow now without making
-   the first paint slower. */
+   data/summary.json carries the latest value per metric and 30-day event
+   counts, about half a kilobyte gzipped - it feeds the "unusual today"
+   strip without touching any history. A chart loads that one instrument's
+   file on demand and keeps it, so moving between instruments costs one
+   small request each and never the whole store. History depth and the
+   instrument count can both grow without making the first paint slower. */
 
 async function loadJSON(path) {
   try {
@@ -77,7 +75,6 @@ async function loadJSON(path) {
 async function loadAll() {
   state.meta = await loadJSON("data/meta.json");
   if (!state.meta) return false;
-  state.region = localStorage.getItem("mf-region") || state.meta.default_region;
   state.summary = (await loadJSON("data/summary.json")) || { instruments: {} };
   return true;
 }
@@ -109,33 +106,10 @@ function instrumentEvents(id) {
 
 /* ---------- helpers ---------- */
 
-function fmtPrice(v, currency) {
-  if (v == null) return "-";
-  const n = v >= 1000 ? v.toFixed(0) : v.toFixed(2);
-  if (currency === "GBX") return n + "p";
-  if (currency === "GBP") return "£" + n;
-  if (currency === "USD") return "$" + n;
-  return n;
-}
-
 function ratioBadge(v) {
   if (v == null) return '<span class="badge na">-</span>';
   const cls = v >= 2 ? "hot" : v >= 1.4 ? "warm" : "cool";
   return `<span class="badge ${cls}">${v.toFixed(1)}x</span>`;
-}
-
-function pctBadge(v) {
-  if (v == null) return '<span class="badge na">-</span>';
-  const cls = v >= 85 || v <= 15 ? "hot" : v >= 70 || v <= 30 ? "warm" : "cool";
-  return `<span class="badge ${cls}">${Math.round(v)}</span>`;
-}
-
-function flowBadge(v) {
-  if (v == null) return '<span class="badge na">-</span>';
-  const cls = Math.abs(v) >= 0.5 ? "hot" : Math.abs(v) >= 0.15 ? "warm" : "cool";
-  const sign = v > 0 ? "+" : "";
-  const col = v > 0 ? `color:${COLOURS.up}` : v < 0 ? `color:${COLOURS.down}` : "";
-  return `<span class="badge ${cls}" style="${col}">${sign}${v.toFixed(2)}%</span>`;
 }
 
 /* Axis units. Raw share volumes and pound flows run to eight or nine digits,
@@ -175,84 +149,47 @@ function recentEventCount(id) {
   return DIRECTIONAL_KINDS.reduce((n, k) => n + (counts[k] || 0), 0);
 }
 
-/* ---------- screener view ---------- */
+/* ---------- "unusual today" strip ----------
 
-function screenerRows() {
-  const inRegion = (inst) =>
-    state.region === "All" || inst.region === state.region;
-  return state.meta.instruments.filter(inRegion).map((inst) => ({
-    inst,
-    price: summaryRow(inst.id).price ?? null,
-    volRatio: summaryRow(inst.id).volume_ratio ?? null,
-    flowPct: summaryRow(inst.id).etf_flow_pct ?? null,
-    cotPct: summaryRow(inst.id).cot_percentile ?? null,
-    events: recentEventCount(inst.id),
-  }));
-}
+   What remains of the screener page, folded under the chart: the top few
+   instruments by volume against their own 20-day average, from summary.json,
+   each one a link to its chart. It answers "where is the unusual activity
+   today" without being a second destination - the ranking finds the chart,
+   the chart tells the story. */
 
 function defaultInstrumentId() {
   const has = (id) => state.meta.instruments.some((i) => i.id === id);
   return has(DEFAULT_INSTRUMENT) ? DEFAULT_INSTRUMENT : state.meta.instruments[0].id;
 }
 
-function renderScreener() {
-  const rows = screenerRows();
-  const { key, dir } = state.sort;
-  rows.sort((a, b) => {
-    const av = a[key], bv = b[key];
-    if (av == null && bv == null) return 0;
-    if (av == null) return 1;
-    if (bv == null) return -1;
-    return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
-  });
+const STRIP_SIZE = 5;
 
-  const anyData = rows.some((r) => r.price != null || r.cotPct != null);
-  const arrow = (k) => (k === key ? `<span class="arrow">${dir === -1 ? "▼" : "▲"}</span>` : "");
+function unusualToday() {
+  const rows = Object.entries(state.summary.instruments || {})
+    .map(([id, row]) => ({
+      inst: state.meta.instruments.find((i) => i.id === id),
+      ratio: row.volume_ratio ?? null,
+      insider: DIRECTIONAL_KINDS.reduce((n, k) => n + ((row.events30 || {})[k] || 0), 0),
+    }))
+    .filter((r) => r.inst && r.ratio != null)
+    .sort((x, y) => y.ratio - x.ratio);
+  return rows.slice(0, STRIP_SIZE);
+}
 
-  const html = `
-    ${anyData ? "" : `<p class="empty">No data yet - run the "Fetch market data"
-      workflow in GitHub Actions, wait for it to finish, then refresh.</p>`}
-    <div class="table-wrap"><table>
-      <thead><tr>
-        <th data-k="name">Instrument ${arrow("name")}</th>
-        <th class="hide-sm">Sector</th>
-        <th class="num" data-k="price">Price ${arrow("price")}</th>
-        <th class="num" data-k="volRatio" title="Volume vs own 20-day average">Vol vs avg ${arrow("volRatio")}</th>
-        <th class="num" data-k="flowPct" title="ETF net flow as % of fund AUM (creations/redemptions)">Flow ${arrow("flowPct")}</th>
-        <th class="num" data-k="cotPct" title="Speculative net positioning percentile, 5y">COT %ile ${arrow("cotPct")}</th>
-        <th class="num" data-k="events" title="Open-market director dealings and TR-1 holding changes, last 30 days - share-scheme awards excluded">Insider ${arrow("events")}</th>
-      </tr></thead>
-      <tbody>
-        ${rows.map((r) => `
-          <tr data-id="${r.inst.id}">
-            <td>${r.inst.name}<div class="sector hide-sm">${r.inst.type.toUpperCase()}</div></td>
-            <td class="sector hide-sm">${r.inst.sector}</td>
-            <td class="num">${fmtPrice(r.price, r.inst.currency)}</td>
-            <td class="num">${ratioBadge(r.volRatio)}</td>
-            <td class="num">${r.inst.type === "etf" ? flowBadge(r.flowPct) : '<span class="badge na">-</span>'}</td>
-            <td class="num">${r.inst.type === "commodity" ? pctBadge(r.cotPct) : '<span class="badge na">-</span>'}</td>
-            <td class="num">${r.events || '<span class="badge na">-</span>'}</td>
-          </tr>`).join("")}
-      </tbody>
-    </table></div>
-    <p class="panel-note">Vol vs avg is trading activity, not net buying - direction has to be read
-    alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider counts open-market director dealings and TR-1 holding
-    changes from RNS, and US insider dealings from SEC Form 4. Share-scheme awards, vestings and
-    option exercises, and trades made under a pre-arranged Rule 10b5-1 plan, are marked on the
-    chart but not counted - they are calendar-driven, not a view on the price.</p>`;
-
-  document.getElementById("app").innerHTML = html;
-
-  document.querySelectorAll("th[data-k]").forEach((th) =>
-    th.addEventListener("click", () => {
-      const k = th.dataset.k;
-      state.sort = { key: k, dir: state.sort.key === k ? -state.sort.dir : -1 };
-      renderScreener();
-    })
-  );
-  document.querySelectorAll("tbody tr").forEach((tr) =>
-    tr.addEventListener("click", () => { location.hash = "#/i/" + tr.dataset.id; })
-  );
+function stripMarkup(currentId) {
+  const rows = unusualToday();
+  if (rows.length < 2) return "";
+  return `
+    <div class="strip">
+      <span class="strip-title" title="Volume vs own 20-day average, from the latest run. Activity, not net buying.">Unusual today</span>
+      ${rows.map((r) => `
+        <a class="strip-item${r.inst.id === currentId ? " current" : ""}"
+           href="#/i/${encodeURIComponent(r.inst.id)}">
+          <span class="strip-name">${r.inst.name}</span>
+          ${ratioBadge(r.ratio)}
+          ${r.insider ? `<span class="badge cool" title="Open-market insider dealings, last 30 days">${r.insider}&#9650;</span>` : ""}
+        </a>`).join("")}
+    </div>`;
 }
 
 /* Simple moving average over [[date, value], ...].
@@ -498,7 +435,6 @@ async function renderDetail(id, token) {
 
   document.getElementById("app").innerHTML = `
     <div class="detail">
-      <a class="back" href="#/screener">All instruments and screener &rarr;</a>
       ${pickerMarkup(inst)}
       <div class="meta-line">${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
@@ -509,6 +445,7 @@ async function renderDetail(id, token) {
                  class="${state.overlays[o.key] ? "active" : ""}">${o.label}</button>`).join("")}
       </div>
       <div id="chart"></div>
+      ${stripMarkup(inst.id)}
       <p class="panel-note">${inst.type === "commodity"
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
         : inst.type === "etf"
@@ -796,21 +733,6 @@ function drawChart(inst, rangeKey) {
 
 /* ---------- shell ---------- */
 
-function renderRegions() {
-  const el = document.getElementById("regions");
-  const opts = [...state.meta.regions, "All"];
-  el.innerHTML = opts.map((r) =>
-    `<button class="${r === state.region ? "active" : ""}">${r}</button>`).join("");
-  el.querySelectorAll("button").forEach((b) =>
-    b.addEventListener("click", () => {
-      state.region = b.textContent;
-      localStorage.setItem("mf-region", state.region);
-      renderRegions();
-      if (location.hash.startsWith("#/screener")) renderScreener();
-    })
-  );
-}
-
 let routeToken = 0;
 
 async function route() {
@@ -819,11 +741,8 @@ async function route() {
   const token = ++routeToken;
   if (state.chart) { state.chart.dispose(); state.chart = null; }
   const h = location.hash;
-  const onScreener = h.startsWith("#/screener");
-  // the region filter belongs to the screener; on a chart the picker does that
-  document.getElementById("regions").style.display = onScreener ? "" : "none";
   window.scrollTo(0, 0);
-  if (onScreener) { renderScreener(); return; }
+  // #/screener was a destination until v1.2 - old links land on the chart
   const id = h.startsWith("#/i/") ? decodeURIComponent(h.slice(4)) : defaultInstrumentId();
   await renderDetail(id, token);
 }
@@ -842,7 +761,6 @@ async function route() {
       ? "Data updated " + state.summary.updated
       : "No data yet";
   document.getElementById("version").textContent = "v" + APP_VERSION;
-  renderRegions();
   window.addEventListener("hashchange", route);
   window.addEventListener("resize", () => state.chart && state.chart.resize());
   route();

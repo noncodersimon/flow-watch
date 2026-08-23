@@ -44,8 +44,10 @@ window still build a full series over time.
 
 The site opens on a default instrument chart (a FTSE 100 tracker). Use the
 picker above the chart to browse by region, then sector, then instrument, or
-follow "All instruments and screener" for the sortable table. Ranges are 1W to
-Max; there is no 1D because the sources are daily bars.
+search by name, ticker or sector. The "Unusual today" strip under the chart
+ranks the top instruments by volume against their own 20-day average and
+jumps straight to them. Ranges are 1W to Max; there is no 1D because the
+sources are daily bars.
 
 ## Constraints worth knowing
 

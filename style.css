@@ -98,59 +98,11 @@ header h1 a {
 }
 .brand-mark { width: 1.65rem; height: 1.65rem; flex: none; }
 
-#regions button {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 999px;
-  padding: 0.28rem 0.85rem;
-  margin-left: 0.3rem;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
-}
-#regions button:hover { border-color: var(--accent); color: var(--accent); }
-#regions button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-
 main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
 
 .loading, .empty { color: var(--text-muted); text-align: center; padding: 2rem 1rem; }
 
-/* ---------- screener table ---------- */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-th, td { padding: 0.6rem 0.7rem; text-align: left; font-size: 0.9rem; }
-th {
-  background: var(--tint);
-  color: var(--text);
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-}
-th:hover { color: var(--accent); }
-th .arrow { font-size: 0.7rem; color: var(--accent); }
-tbody tr { border-top: 1px solid var(--border); cursor: pointer; }
-tbody tr:hover { background: var(--tint); }
-td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* ---------- badges (strip + picker) ---------- */
 
 .badge {
   display: inline-block;
@@ -166,8 +118,6 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .badge.warm { background: var(--tint-amber); color: #92540A; }  /* amber is a highlight, not a text colour */
 .badge.cool { background: var(--tint-azure); color: #0A6E9E; }
 .badge.na   { background: #F1EFE8; color: #8A8678; font-weight: 400; }
-
-.sector { color: var(--text-muted); font-size: 0.8rem; }
 
 /* ---------- detail view ---------- */
 
@@ -245,6 +195,46 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
+/* "Unusual today" - the screener's ranking folded under the chart. A single
+   horizontally scrolling row: enough to answer "where is the activity",
+   never a second destination. */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.2rem;
+}
+.strip-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex: none;
+}
+.strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.strip-item:hover { border-color: var(--accent); }
+.strip-item.current { border-color: var(--accent); background: var(--tint); }
+.strip-name { max-width: 11em; overflow: hidden; text-overflow: ellipsis; }
 
 .panel-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.7rem; }
 
@@ -385,18 +375,9 @@ footer a:hover { color: var(--accent); text-decoration: underline; }
   color: var(--text-muted);
 }
 
-/* A wide table scrolls inside its own box rather than pushing the page
-   sideways - six columns will not fit a phone however tightly they are set. */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
 @media (max-width: 640px) {
-  /* six columns on a 390px phone: every pixel of padding is fought for, and
-     the Insider column is the one that must not fall off the edge */
   main { padding: 0.75rem 0.6rem; }
-  th, td { padding: 0.5rem 0.22rem; font-size: 0.8rem; }
-  th { text-transform: none; letter-spacing: 0; font-size: 0.72rem; }
-  .badge { min-width: 0; padding: 0.12rem 0.35rem; font-size: 0.76rem; }
-  .hide-sm { display: none; }
   .overlays button { font-size: 0.72rem; padding: 0.2rem 0.55rem; }
+  #chart { height: 340px; }
   .picker-current { font-size: 1.15rem; }
 }

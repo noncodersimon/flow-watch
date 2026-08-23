@@ -85,8 +85,9 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   with no build step nothing fingerprints assets, so without it a returning
   browser runs stale JS against fresh data and a shipped feature looks
   missing (visible in footer - used to confirm deploys).
-  Routes: #/ is the default instrument chart, #/i/<id> a chosen one,
-  #/screener the table. Chart overlays live in OVERLAYS in app.js and are
+  Routes: #/ is the default instrument chart, #/i/<id> a chosen one.
+  There is no screener page - its ranking survives as the "Unusual today"
+  strip under the chart, fed by summary.json. Chart overlays live in OVERLAYS in app.js and are
   remembered per browser; all are derived client-side except the benchmark,
   which is another instrument named by meta.json benchmarks[region].
 - Theme follows the Digitelos design system (github.com/noncodersimon/digitelos,
@@ -511,3 +512,20 @@ ATR was asked for and is not here. It needs the day's high and low, and the
 store keeps only closes and volume, so it is a data change rather than a
 chart change - realised volatility from closes is the same question answered
 with what we already have.
+
+### 2026-08-23 - The screener page is gone; its ranking lives under the chart
+Supersedes the entry above that moved the table to #/screener and kept it
+one tap away. In practice it was a second destination nobody would visit:
+the chart screen with the picker and search already covers "show me this
+instrument", and seven columns never fitted a phone anyway. What the table
+alone could answer - "where is the unusual activity today?" - now lives as
+the "Unusual today" strip under the chart: the top five instruments by
+volume against their own 20-day average, from summary.json, each a link to
+its chart. The ranking finds the chart; the chart tells the story.
+
+summary.json stays load-bearing - the strip reads it, so the decision that
+the screener's digest file must exist and be rebuilt last is unchanged.
+#/screener still routes, to the default chart, so old links do not 404.
+Region filter buttons went with the table; the picker groups by region.
+If richer cross-instrument comparison is ever wanted again, the table is
+one git revert away - but try widening the strip first.
