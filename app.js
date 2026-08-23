@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.7";
+const APP_VERSION = "1.8";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -651,6 +651,24 @@ function clip(points, days) {
   return points.filter((p) => p[0] >= cutoff);
 }
 
+/* How many rows the chart key needs at a given width. ECharts wraps a plain
+   legend when it runs out of room but will not say where, so the wrap is
+   re-measured here with the same font and the plot moved clear of it. */
+function legendRowCount(names, width) {
+  if (!names.length) return 0;
+  const ctx = legendRowCount.ctx ||
+    (legendRowCount.ctx = document.createElement("canvas").getContext("2d"));
+  ctx.font = "11px " + CHART_FONT;
+  const usable = width - 56 - 8; // the key's own left and right insets
+  let rows = 1, x = 0;
+  for (const name of names) {
+    const w = 18 + 5 + ctx.measureText(name).width + 12; // marker, pad, text, gap
+    if (x > 0 && x + w > usable) { rows += 1; x = 0; }
+    x += w;
+  }
+  return rows;
+}
+
 function drawChart(inst, rangeKey) {
   const days = RANGES[rangeKey];
 
@@ -845,7 +863,31 @@ function drawChart(inst, rangeKey) {
   }
 
   /* ----- lay the panels out ----- */
-  const TOP = 8, BOTTOM = 12, GAP = 6;
+  const el = document.getElementById("chart");
+
+  // Every price-panel line is named in the key, Price included - an unnamed
+  // main line makes the reader guess. The lower panels stay out of it: each
+  // carries its own axis label, and a scrolling legend that shows two of
+  // five names is worse than no legend at all.
+  const lineNames = panels[0].series
+    .filter((sr) => sr.type === "line")
+    .map((sr) => sr.name);
+
+  // On a phone the key wraps onto a second row, and a key drawn over the
+  // plot is unreadable twice over - measure the rows it needs and push the
+  // plot down by that much, growing the chart so no panel pays for it.
+  const legendRows = legendRowCount(lineNames, (el && el.clientWidth) || 600);
+  const legendPx = legendRows ? 6 + legendRows * 23 : 16;
+
+  // the chart has to grow as panels are switched on, or they squash
+  const perPanel = window.innerWidth < 640 ? 96 : 118;
+  const heightPx = 170 + perPanel * panels.length + Math.max(0, legendRows - 1) * 23;
+  if (el) {
+    el.style.height = heightPx + "px";
+    state.chart.resize({ height: heightPx });
+  }
+
+  const TOP = (legendPx / heightPx) * 100, BOTTOM = 12, GAP = 6;
   const available = 100 - TOP - BOTTOM - GAP * (panels.length - 1);
   const totalWeight = panels.reduce((sum, p) => sum + p.weight, 0);
   let y = TOP;
@@ -862,22 +904,7 @@ function drawChart(inst, rangeKey) {
   const chartSeries = panels.flatMap((p, i) =>
     p.series.map((sr) => ({ ...sr, xAxisIndex: i, yAxisIndex: i })));
 
-  // the chart has to grow as panels are switched on, or they squash
-  const el = document.getElementById("chart");
-  if (el) {
-    const perPanel = window.innerWidth < 640 ? 96 : 118;
-    el.style.height = (170 + perPanel * panels.length) + "px";
-    state.chart.resize({ height: el.clientHeight });
-  }
-
-  // Only the price panel's overlays need naming - the lower panels each carry
-  // their own axis label, and a scrolling legend that shows two of five names
-  // is worse than no legend at all.
   renderMarkerKey(evs);
-
-  const lineNames = panels[0].series
-    .filter((sr) => sr.type === "line" && sr.name !== "Price")
-    .map((sr) => sr.name);
 
   state.chart.setOption({
     textStyle: { fontFamily: CHART_FONT },
