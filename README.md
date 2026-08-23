@@ -38,7 +38,9 @@ window still build a full series over time.
    SEC are all free and keyless.
 3. Enable Pages: Settings → Pages → Source: Deploy from a branch → main, / (root).
 4. Actions tab → "Fetch market data" → Run workflow (first run seeds the data).
-5. The site appears at `https://<user>.github.io/<repo>/`.
+5. The site is served at https://flows.digitelos.co.uk (the CNAME file plus
+   a DNS CNAME from flows.digitelos.co.uk to noncodersimon.github.io);
+   the github.io URL redirects there.
 
 ## Using it
 
