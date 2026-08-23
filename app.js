@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.6";
+const APP_VERSION = "0.7";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -10,13 +10,31 @@ const APP_VERSION = "0.6";
    insider buying or selling - counting them would make every director look
    like a seller. */
 const EVENT_MARKS = {
-  pdmr_buy:   { glyph: "▲", color: "#1a7f4b", label: "Director buy" },
-  pdmr_sell:  { glyph: "▼", color: "#c0392b", label: "Director sell" },
-  pdmr_award: { glyph: "◆", color: "#667",    label: "Share scheme award or exercise" },
-  pdmr_scheduled: { glyph: "◇", color: "#667", label: "Pre-scheduled plan trade (Rule 10b5-1)" },
-  tr1_up:     { glyph: "▲", color: "#2E5A9C", label: "Major holding increased" },
-  tr1_down:   { glyph: "▼", color: "#2E5A9C", label: "Major holding decreased" },
+  pdmr_buy:   { glyph: "▲", role: "up",      label: "Director buy" },
+  pdmr_sell:  { glyph: "▼", role: "down",    label: "Director sell" },
+  pdmr_award: { glyph: "◆", role: "muted",   label: "Share scheme award or exercise" },
+  pdmr_scheduled: { glyph: "◇", role: "muted", label: "Pre-scheduled plan trade (Rule 10b5-1)" },
+  tr1_up:     { glyph: "▲", role: "azure",   label: "Major holding increased" },
+  tr1_down:   { glyph: "▼", role: "azure",   label: "Major holding decreased" },
 };
+
+/* The chart reads its colours from the stylesheet, so the Digitelos tokens in
+   style.css are the one source of truth - retheme there and the chart follows.
+   Fallbacks keep it drawable if the stylesheet ever fails to load. */
+const COLOURS = { up: "#1F7A4D", down: "#C9300C", accent: "#2B57DB",
+                  azure: "#17A2E8", muted: "#55555F" };
+const CHART_FONT = "Inter, system-ui, -apple-system, sans-serif";
+
+function readColours() {
+  const css = getComputedStyle(document.documentElement);
+  for (const [role, token] of Object.entries({
+    up: "--up", down: "--down", accent: "--accent",
+    azure: "--azure", muted: "--neutral",
+  })) {
+    const v = css.getPropertyValue(token).trim();
+    if (v) COLOURS[role] = v;
+  }
+}
 const DIRECTIONAL_KINDS = ["pdmr_buy", "pdmr_sell", "tr1_up", "tr1_down"];
 
 /* What the site opens on. A FTSE 100 tracker is the broadest single line for
@@ -95,7 +113,7 @@ function flowBadge(v) {
   if (v == null) return '<span class="badge na">-</span>';
   const cls = Math.abs(v) >= 0.5 ? "hot" : Math.abs(v) >= 0.15 ? "warm" : "cool";
   const sign = v > 0 ? "+" : "";
-  const col = v > 0 ? "color:#1a7f4b" : v < 0 ? "color:#c0392b" : "";
+  const col = v > 0 ? `color:${COLOURS.up}` : v < 0 ? `color:${COLOURS.down}` : "";
   return `<span class="badge ${cls}" style="${col}">${sign}${v.toFixed(2)}%</span>`;
 }
 
@@ -172,7 +190,7 @@ function renderScreener() {
   const html = `
     ${anyData ? "" : `<p class="empty">No data yet - run the "Fetch market data"
       workflow in GitHub Actions, wait for it to finish, then refresh.</p>`}
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr>
         <th data-k="name">Instrument ${arrow("name")}</th>
         <th class="hide-sm">Sector</th>
@@ -194,7 +212,7 @@ function renderScreener() {
             <td class="num">${r.events || '<span class="badge na">-</span>'}</td>
           </tr>`).join("")}
       </tbody>
-    </table>
+    </table></div>
     <p class="panel-note">Vol vs avg is trading activity, not net buying - direction has to be read
     alongside price. ETF flow is estimated from daily changes in shares outstanding - genuine net creation/redemption, but an estimate. Insider counts open-market director dealings and TR-1 holding
     changes from RNS, and US insider dealings from SEC Form 4. Share-scheme awards, vestings and
@@ -334,9 +352,9 @@ function drawChart(inst, rangeKey) {
       ],
       series: [
         { name: "Net position", type: "bar", data: net.map((p) => p[1]),
-          itemStyle: { color: (d) => (d.value >= 0 ? "#1a7f4b" : "#c0392b") } },
+          itemStyle: { color: (d) => (d.value >= 0 ? COLOURS.up : COLOURS.down) } },
         { name: "Percentile", type: "line", yAxisIndex: 1, showSymbol: false,
-          data: pct.map((p) => p[1]), lineStyle: { color: "#2E5A9C" } },
+          data: pct.map((p) => p[1]), lineStyle: { color: COLOURS.azure } },
       ],
       grid: { left: 60, right: 55, top: 40, bottom: 30 },
     }, true);
@@ -352,17 +370,17 @@ function drawChart(inst, rangeKey) {
   // colour volume by day's price direction
   const volData = dates.map((d, i) => {
     const up = i === 0 || price[i][1] >= price[i - 1][1];
-    return { value: volByDate[d] ?? 0, itemStyle: { color: up ? "#1a7f4b" : "#c0392b" } };
+    return { value: volByDate[d] ?? 0, itemStyle: { color: up ? COLOURS.up : COLOURS.down } };
   });
 
   // insider event markers
   const evs = (state.events[inst.id] || []).filter((e) => dates.includes(e.date));
   const markPoints = evs.map((e) => {
-    const mark = EVENT_MARKS[e.kind] || { glyph: "●", color: "#1F3864", label: e.kind };
+    const mark = EVENT_MARKS[e.kind] || { glyph: "●", role: "accent", label: e.kind };
     return {
       coord: [e.date, price[dates.indexOf(e.date)][1]],
       value: mark.glyph,
-      itemStyle: { color: mark.color },
+      itemStyle: { color: COLOURS[mark.role] || COLOURS.accent },
       name: mark.label,
     };
   });
@@ -373,7 +391,7 @@ function drawChart(inst, rangeKey) {
   const cumFlow = dates.map((d) => { cum += flowByDate[d] ?? 0; return Math.round(cum); });
   const flowBars = dates.map((d) => {
     const v = flowByDate[d] ?? 0;
-    return { value: v, itemStyle: { color: v >= 0 ? "#1a7f4b" : "#c0392b" } };
+    return { value: v, itemStyle: { color: v >= 0 ? COLOURS.up : COLOURS.down } };
   });
 
   const grids = hasFlow
@@ -408,7 +426,7 @@ function drawChart(inst, rangeKey) {
 
   const chartSeries = [
     { name: "Price", type: "line", data: price.map((p) => p[1]),
-      showSymbol: false, lineStyle: { color: "#1F3864", width: 2 },
+      showSymbol: false, lineStyle: { color: COLOURS.accent, width: 2 },
       xAxisIndex: 0, yAxisIndex: 0,
       markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
     { name: "Volume", type: "bar", data: volData, xAxisIndex: 1, yAxisIndex: 1 },
@@ -417,11 +435,12 @@ function drawChart(inst, rangeKey) {
     chartSeries.push(
       { name: "Net flow", type: "bar", data: flowBars, xAxisIndex: 2, yAxisIndex: 2 },
       { name: "Cumulative flow", type: "line", data: cumFlow, showSymbol: false,
-        xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: "#2E5A9C", width: 1.5 } },
+        xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: COLOURS.azure, width: 1.5 } },
     );
   }
 
   state.chart.setOption({
+    textStyle: { fontFamily: CHART_FONT },
     tooltip: { trigger: "axis" },
     axisPointer: { link: [{ xAxisIndex: "all" }] },
     grid: grids,
@@ -461,6 +480,7 @@ function route() {
 }
 
 (async function init() {
+  readColours();
   const ok = await loadAll();
   if (!ok) {
     document.getElementById("app").innerHTML =

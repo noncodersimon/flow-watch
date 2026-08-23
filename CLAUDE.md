@@ -73,7 +73,13 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   every front-end change (visible in footer - used to confirm deploys).
   Routes: #/ is the default instrument chart, #/i/<id> a chosen one,
   #/screener the table.
-- Palette: navy #1F3864, blue #2E5A9C, up #1a7f4b, down #c0392b.
+- Theme follows the Digitelos design system (github.com/noncodersimon/digitelos,
+  css/main.css). Brand: cobalt #2B57DB, azure #17A2E8, vermilion #EF3F18,
+  amber #F98E12, ink #0B0B10, parchment #ECEAE1. Chrome uses cobalt and azure
+  only; amber is a highlight; data up #1F7A4D and down #C9300C. Fonts are
+  Space Grotesk (display) and Inter (body) from Google Fonts. Chart colours
+  are read from the CSS custom properties at run time, so style.css is the
+  single source of truth - do not hardcode a colour in app.js.
 - Deliver complete working files, not fragments. Mobile-first - check iPhone
   Safari rendering for UI changes.
 - Run ./check.sh before committing - it does py_compile on the adapters,
@@ -316,3 +322,31 @@ one-day range is a single close, which draws nothing. 1W is about five
 points - sparse but real. A genuine intraday range needs tick data, which
 is phase 2; add the button then, not before, because a range button that
 renders an empty chart reads as a bug.
+
+### 2026-08-23 - Themed to the Digitelos design system, with one deliberate divergence
+The dashboard now uses the Digitelos tokens rather than its own navy/blue,
+so Simon's projects look like one family: Fibonacci spiral mark, cobalt and
+azure chrome, Space Grotesk over Inter, warm off-white ground.
+
+The house rule there is "cobalt and azure dominate, vermilion sparingly for
+buttons, amber for highlights only". Followed, except that chrome here uses
+cobalt and azure ONLY and never vermilion. A dashboard cannot have a red
+button competing with a red price move, so the vermilion family is reserved
+for "down" in the data. Buttons are cobalt instead.
+
+Vermilion itself is not used raw: #EF3F18 on white is 3.89:1, which fails
+SC 1.4.3, and the Digitelos kit already darkens it to #C9300C for CTAs.
+That darkened value is what "down" uses (5.37:1), and up was pitched to
+match at #1F7A4D (5.32:1) so neither side of the market shouts louder.
+Every pair in the theme was measured; the numbers are in the commit.
+
+Chart colours are read from the CSS custom properties at run time rather
+than duplicated in app.js, so a retheme means editing style.css only.
+
+### 2026-08-23 - Google Fonts is a second CDN dependency, accepted
+The architecture note says no build step, and that still holds, but the
+front end now depends on two CDNs rather than one: ECharts and Google
+Fonts. Both are stylesheet/script tags with local fallbacks in the font
+stack, so a blocked CDN degrades to system fonts rather than breaking.
+Self-hosting the two families is the alternative if that ever matters -
+it costs about 200KB in the repo and was judged not worth it yet.
