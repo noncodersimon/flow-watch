@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.8";
+const APP_VERSION = "1.9";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -138,6 +138,22 @@ function axisScale(values) {
 
 function axisName(label, scale) {
   return scale.unit ? `${label} (${scale.unit})` : label;
+}
+
+/* Panel names are vertical text at the far left of their panel. Sat at the
+   top of the axis they collided with the panel above's bottom label -
+   "Vol (k)" ran into the price axis on a phone. */
+const AXIS_NAME_STYLE = { nameLocation: "middle", nameGap: 46, nameRotate: 90 };
+
+/* The price axis says what its numbers are: the store's own unit, so pence
+   stay pence with a "p" suffix and pounds and dollars get their sign.
+   Converting pence to pounds here was considered and rejected - the chart
+   would then disagree with the store, the tooltip and the event cards. */
+function priceLabel(inst) {
+  const pre = inst.currency === "GBP" ? "£" : inst.currency === "USD" ? "$" : "";
+  const suf = inst.currency === "GBX" ? "p" : "";
+  return (v) =>
+    pre + Number(v).toLocaleString("en-GB", { maximumFractionDigits: 2 }) + suf;
 }
 
 function scaledLabel(v, scale) {
@@ -777,7 +793,11 @@ function drawChart(inst, rangeKey) {
     }
   }
 
-  const panels = [{ weight: 3, axis: { type: "value", scale: true }, series: priceSeries }];
+  const panels = [{
+    weight: 3,
+    axis: { type: "value", scale: true, axisLabel: { formatter: priceLabel(inst) } },
+    series: priceSeries,
+  }];
 
   /* ----- volume panel ----- */
   const volScale = axisScale(volData.map((v) => v.value));
@@ -791,7 +811,7 @@ function drawChart(inst, rangeKey) {
   }
   panels.push({
     weight: 1.3,
-    axis: { type: "value", splitNumber: 2, name: axisName("Vol", volScale), nameGap: 8,
+    axis: { type: "value", splitNumber: 2, name: axisName("Vol", volScale), ...AXIS_NAME_STYLE,
             axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
     series: volumeSeries,
   });
@@ -808,7 +828,7 @@ function drawChart(inst, rangeKey) {
     const flowScale = axisScale(flowBars.map((v) => v.value).concat(cumFlow));
     panels.push({
       weight: 1.3,
-      axis: { type: "value", splitNumber: 2, name: axisName("Flow", flowScale), nameGap: 8,
+      axis: { type: "value", splitNumber: 2, name: axisName("Flow", flowScale), ...AXIS_NAME_STYLE,
               axisLabel: { formatter: (v) => scaledLabel(v, flowScale) } },
       series: [
         { name: "Net flow", type: "bar", data: flowBars },
@@ -825,7 +845,7 @@ function drawChart(inst, rangeKey) {
     if (hasAny(data)) {
       panels.push({
         weight: 1.2,
-        axis: { type: "value", splitNumber: 2, name: "Rel vol", nameGap: 8,
+        axis: { type: "value", splitNumber: 2, name: "Rel vol", ...AXIS_NAME_STYLE,
                 axisLabel: { formatter: (v) => v + "x" } },
         series: [{ name: "Rel volume", type: "line", data, showSymbol: false, step: "middle",
                    lineStyle: { color: COLOURS.azure, width: 1.3 },
@@ -840,7 +860,7 @@ function drawChart(inst, rangeKey) {
     if (hasAny(data)) {
       panels.push({
         weight: 1.2,
-        axis: { type: "value", splitNumber: 2, name: "Return %", nameGap: 8 },
+        axis: { type: "value", splitNumber: 2, name: "Return %", ...AXIS_NAME_STYLE },
         series: [{ name: "Return over range", type: "line", data, showSymbol: false,
                    lineStyle: { color: COLOURS.accent, width: 1.4 },
                    areaStyle: { opacity: 0.06 },
@@ -855,7 +875,7 @@ function drawChart(inst, rangeKey) {
     if (hasAny(data)) {
       panels.push({
         weight: 1.2,
-        axis: { type: "value", splitNumber: 2, name: "Vol %", nameGap: 8 },
+        axis: { type: "value", splitNumber: 2, name: "Vol %", ...AXIS_NAME_STYLE },
         series: [{ name: "20d realised vol", type: "line", data, showSymbol: false,
                    lineStyle: { color: COLOURS.amber, width: 1.4 } }],
       });
