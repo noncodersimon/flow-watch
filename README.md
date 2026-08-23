@@ -26,8 +26,8 @@ window still build a full series over time.
 ## Setup
 
 1. Create the GitHub repo and push this folder.
-2. Add the Actions secret: repo Settings → Secrets and variables → Actions →
-   New repository secret → name `ALPHAVANTAGE_KEY`.
+2. No API key is needed for price and volume - Yahoo, CFTC, Investegate and
+   SEC are all free and keyless.
 3. Enable Pages: Settings → Pages → Source: Deploy from a branch → main, / (root).
 4. Actions tab → "Fetch market data" → Run workflow (first run seeds the data).
 5. The site appears at `https://<user>.github.io/<repo>/`.
@@ -41,12 +41,13 @@ Max; there is no 1D because the sources are daily bars.
 
 ## Constraints worth knowing
 
-- Alpha Vantage free tier allows ~25 requests/day. The volume adapter rotates
-  through the instrument list (22 calls/run), so with more than ~22 equities+ETFs
-  each one refreshes every couple of days rather than daily. Fine at current list
-  size; upgrade the key or switch source if the list grows a lot.
+- Price and volume come from Yahoo via yfinance. No per-day quota, so the
+  instrument list is not capped, but Yahoo is unofficial and rate-limits at
+  times. Failures are per-chunk and non-fatal.
 - CFTC COT data is weekly (published Fridays, data as of Tuesday).
-- LSE prices from Alpha Vantage are in pence (GBX).
+- LSE prices are in pence (GBX) from Yahoo, as they were from Alpha Vantage.
+  A 20x jump in an instrument's last close is treated as a change of units and
+  refused rather than merged.
 - `pdmr_award` (option exercises, vests, nil-cost awards, and the sales that
   settle them) is deliberately NOT counted as insider buying or selling. It is
   calendar-driven, and it is the large majority of PDMR announcements - 112 of
@@ -57,9 +58,6 @@ Max; there is no 1D because the sources are daily bars.
   event whose issuer does not match the instrument exactly.
 - `pdmr_scheduled` (US Rule 10b5-1 plan trades) is likewise not counted as
   signal - the plan is adopted months before it executes.
-- meta.json holds exactly 22 equity+ETF symbols against Alpha Vantage's 22
-  calls per run, so everything refreshes daily. Adding a 23rd starts a
-  rotation and slows every instrument down.
 - SEC wants a contact address in the User-Agent and answers 403 without one.
   Set the `SEC_CONTACT` repository variable (Settings -> Secrets and variables
   -> Actions -> Variables tab) to an address you actually monitor. The bare

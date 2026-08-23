@@ -1,4 +1,15 @@
-"""Fetch daily price + volume from Alpha Vantage and compute the
+"""RETIRED - kept as a fallback, not run by the workflow.
+
+Superseded by price_volume_yahoo.py on 2026-08-23. Alpha Vantage's free
+tier allowed about 25 requests a day, one per instrument, which capped the
+dashboard at 22 instruments. Yahoo has no comparable quota.
+
+Yahoo is an unofficial API and does break. If it does, put this back in
+.github/workflows/fetch.yml in place of price_volume_yahoo.py and restore
+the ALPHAVANTAGE_KEY env line - the repository secret is still there. Note
+the 22-symbol ceiling comes back with it.
+
+Fetch daily price + volume from Alpha Vantage and compute the
 unusual-volume ratio (today's volume / 20-day average).
 
 Free-tier limit is ~25 requests/day, so instruments are processed in a

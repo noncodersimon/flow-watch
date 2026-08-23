@@ -38,11 +38,14 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 
 ## Known constraints
 
-- Alpha Vantage free tier ~25 req/day: volume adapter rotates 22 symbols/run
-  and pulls "full" history on first seed, "compact" thereafter (150-point
-  threshold). meta.json now holds exactly 22 equity+ETF symbols, so every
-  instrument still refreshes daily - the 23rd starts the rotation and
-  everything slows down. Check this before adding instruments.
+- Price and volume come from Yahoo via yfinance, which has no per-day
+  request quota, so the instrument list is no longer capped. Yahoo is an
+  unofficial API and does rate-limit: failures are per-chunk and non-fatal,
+  and a missed run costs freshness, not history, because the store merges.
+- Yahoo quotes LSE lines in pence, matching the GBX in meta.json. A source
+  that silently switched to pounds would corrupt the store quietly, so
+  price_volume_yahoo.py refuses any merge that moves an instrument's last
+  close by 20x or more and reports it instead.
 - SEC needs a User-Agent naming a contact address; it rejects unroutable
   ones, users.noreply.github.com among them. A bare address is accepted, so
   sec_form4.py normalises SEC_CONTACT to "flow-watch <address>" and falls
@@ -161,18 +164,16 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
-## Current state (Aug 2026, v0.3)
+## Current state (Aug 2026, v0.8)
 
-History is thin: every series holds exactly 100 daily points (2026-03-31
-onward) because the only fetch run so far was a manual one on 2026-08-22
-against the pre-rotation adapter, which asked for "compact". The current
-adapter asks for "full" whenever an instrument has under 150 points, and
-Alpha Vantage does serve full history on the free tier (IBM returns 6,742
-points back to 1999), so the next run backfills to the MAX_POINTS cap of
-2600, about 10 years. The cron is Mon-Sat, so a Sunday change waits for
-Monday.
+History is still thin in the repo: every series holds exactly 100 daily
+points (2026-03-31 onward), because there has only ever been one fetch run
+- a manual dispatch on 2026-08-22, before the US names existed and before
+the source switch. The cron is Mon-Sat and has never fired. The next run
+seeds five years from Yahoo for every instrument, including the four US
+equities, which currently have insider events but no price line.
 
-Live: volume/price/ratio (Alpha Vantage), COT (CFTC Socrata), ETF flows
+Live: price/volume/ratio (Yahoo via yfinance), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
 before deltas exist), and informed money on both sides of the Atlantic -
 Investegate RNS for the 12 UK equities (PDMR dealings and TR-1 major
@@ -350,3 +351,42 @@ Fonts. Both are stylesheet/script tags with local fallbacks in the font
 stack, so a blocked CDN degrades to system fonts rather than breaking.
 Self-hosting the two families is the alternative if that ever matters -
 it costs about 200KB in the repo and was judged not worth it yet.
+
+### 2026-08-23 - Price and volume moved from Alpha Vantage to Yahoo
+The free Alpha Vantage tier allowed about 25 requests a day, one per
+instrument, which is why the rotation logic existed and why meta.json sat
+at exactly 22 equity+ETF symbols. Every new instrument was a trade-off
+against refresh frequency, and lifting it costs 499 USD a year. Yahoo has
+no comparable per-day quota and yfinance batches tickers into one
+download, so the ceiling is gone for nothing. yfinance was already a
+dependency for etf_flows.py, so nothing new was added.
+
+The cost is that Yahoo is an unofficial API that does break and does
+rate-limit. Failures are per-chunk and non-fatal, and because the store
+merges rather than overwrites, a missed run costs freshness rather than
+history. volume_alphavantage.py is kept in the repo, out of the workflow,
+as the fallback if Yahoo goes away - the 22-symbol ceiling comes back with
+it. Rejected: paying for Alpha Vantage premium, which buys convenience
+rather than capability that is not otherwise free.
+
+Switching source is exactly where a store gets quietly corrupted, so the
+adapter refuses any merge that moves an instrument's last close by 20x or
+more. Yahoo quotes LSE lines in pence, matching the GBX already in
+meta.json, but a silent switch to pounds would divide every UK price by
+100 and the bad points would merge in alongside the good ones with no
+visible break.
+
+### 2026-08-23 - Five years of history, not ten, until the store is split
+The stored series is now five years rather than the 100 points the repo
+had. Ten was measured and rejected for now, on page weight: the front end
+loads every metric file on every visit, and at 26 instruments that is
+about 500KB gzipped for five years against 1MB for ten. Adding regions
+makes it worse - 40 instruments at ten years is about 1.5MB, which is a
+poor first load on a phone.
+
+The real unlock is not a smaller cap but a different shape: per-instrument
+series files loaded on demand, with the screener reading a small
+latest-value summary. That would make history depth free and let the
+instrument list grow without limit. Worth doing before either goes much
+further; until then five years is the honest compromise, and MAX_POINTS
+stays at 2600 so nothing is thrown away if the period is raised.

@@ -23,14 +23,13 @@ jobs:
 
       - name: Run adapters
         env:
-          ALPHAVANTAGE_KEY: ${{ secrets.ALPHAVANTAGE_KEY }}
           # SEC fair-access wants a contact address it can reach. Set this as
           # a repository variable; without it the adapter falls back to a
           # placeholder, which works but is not what the policy asks for.
           SEC_CONTACT: ${{ vars.SEC_CONTACT }}
         working-directory: adapters
         run: |
-          python volume_alphavantage.py
+          python price_volume_yahoo.py
           python cot_cftc.py
           python etf_flows.py
           python informed_money.py
