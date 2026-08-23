@@ -208,24 +208,29 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0.2rem;
 }
+/* The label is a button and has to look like one at rest - hover styling
+   alone is invisible on a phone. Pill treatment matches the overlay toggles;
+   open state fills like an active range pill. */
 .strip-toggle {
   font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--accent);
   white-space: nowrap;
   flex: none;
-  background: transparent;
-  border: none;
-  padding: 0.2rem 0.1rem;
+  background: var(--tint);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.28rem 0.75rem;
   cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
 }
-.strip-toggle:hover { color: var(--accent); }
+.strip-toggle:hover { background: var(--accent); color: var(--on-accent); }
 .strip-chevron { display: inline-block; transition: transform 160ms ease; }
 .strip-toggle.open .strip-chevron { transform: rotate(180deg); }
-.strip-toggle.open { color: var(--accent); }
+.strip-toggle.open { background: var(--accent); color: var(--on-accent); }
 
 .strip-expanded {
   background: var(--surface);
