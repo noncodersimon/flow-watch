@@ -35,9 +35,9 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - events.json kinds: pdmr_buy, pdmr_sell, pdmr_award, pdmr_scheduled,
   tr1_up, tr1_down. pdmr_award is share-scheme activity (option exercise,
   vest, nil-cost award, and any sale that only settles one).
-  pdmr_scheduled is a US Rule 10b5-1 plan trade. Both are drawn on the
-  chart but never counted as insider buying or selling - see the decision
-  log. Only pdmr_buy, pdmr_sell, tr1_up and tr1_down feed the Insider
+  pdmr_scheduled is a US Rule 10b5-1 plan trade. Both are calendar noise:
+  never counted as insider buying or selling, and drawn on the chart only
+  via the off-by-default "Award events" overlay - see the decision log. Only pdmr_buy, pdmr_sell, tr1_up and tr1_down feed the Insider
   column.
 
 ## Known constraints
@@ -529,3 +529,19 @@ the screener's digest file must exist and be rebuilt last is unchanged.
 Region filter buttons went with the table; the picker groups by region.
 If richer cross-instrument comparison is ever wanted again, the table is
 one git revert away - but try widening the strip first.
+
+### 2026-08-23 - Award markers are opt-in; the hover box opens as a date
+Two chart-legibility calls in one pass. The grey award/plan-trade diamonds
+were drawn by default and, on a board like Unilever, outnumbered the
+directional markers 79 to 7 - the signal was wallpapered by its own
+context. They are now behind an off-by-default "Award events" overlay;
+the events stay in the store and the Insider column is unaffected, since
+it never counted them. Rejected: dropping the markers entirely, for the
+same reason pdmr_award exists at all - real dilution should stay visible
+to anyone who asks for it.
+
+The axis tooltip likewise: with several panels up it listed every series
+and covered half a phone screen while following the finger. It now opens
+as just the date, and a tap on the plot switches it to full values and
+back. The formatter reads the flag at show time, so the toggle costs no
+re-render. Taps on the legend still do what legends do.

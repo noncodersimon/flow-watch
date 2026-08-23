@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -202,6 +202,45 @@ function stripMarkup(currentId) {
    restarts at the edge. */
 function round2(v) { return Math.round(v * 100) / 100; }
 
+/* The hover box follows the cursor and, with several panels up, covered half
+   a phone screen. So it opens as just the date, and a tap anywhere on the
+   chart switches it to the full values and back. The formatter reads the
+   flag at call time, so toggling needs no re-render. */
+let tooltipDetail = false;
+
+function tooltipConfig() {
+  return {
+    trigger: "axis",
+    confine: true,
+    formatter: (params) => {
+      const items = Array.isArray(params) ? params : [params];
+      if (!items.length) return "";
+      const date = items[0].axisValueLabel ?? items[0].name;
+      if (!tooltipDetail) return `<b>${date}</b>`;
+      const lines = items
+        .filter((it) => it.value != null && it.value !== "-")
+        .map((it) => {
+          const v = typeof it.value === "number"
+            ? it.value.toLocaleString("en-GB", { maximumFractionDigits: 2 })
+            : it.value;
+          return `${it.marker} ${it.seriesName}&nbsp;&nbsp;<b>${v}</b>`;
+        });
+      return [`<b>${date}</b>`, ...lines].join("<br>");
+    },
+  };
+}
+
+function attachTooltipToggle(chart) {
+  chart.getZr().on("click", (e) => {
+    // only a tap on the plot itself toggles - the legend keeps its own job
+    const grids = chart.getOption().grid || [];
+    const inside = grids.some((_, i) =>
+      chart.containPixel({ gridIndex: i }, [e.offsetX, e.offsetY]));
+    if (!inside) return;
+    tooltipDetail = !tooltipDetail;
+  });
+}
+
 function sma(points, window) {
   const out = [];
   let sum = 0;
@@ -261,6 +300,11 @@ const OVERLAYS = [
   { key: "relvol",  label: "Rel volume", on: false },
   { key: "returns", label: "Return",    on: false },
   { key: "vol",     label: "Volatility", on: false },
+  /* Scheme awards and 10b5-1 plan trades are calendar noise, not a view on
+     the price - that is settled in the decision log. Drawing them by default
+     cluttered the chart with grey diamonds that mean nothing directional,
+     so they are opt-in. The events stay in the store either way. */
+  { key: "awards",  label: "Award events", on: false },
 ];
 
 function loadOverlayPrefs() {
@@ -450,13 +494,15 @@ async function renderDetail(id, token) {
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
         : inst.type === "etf"
         ? "Net flow = daily change in shares outstanding x price - actual creation/redemption of units, estimated from Yahoo data. The line is cumulative flow over the selected range."
-        : "Volume bars are coloured by the day's price direction - suggestive of pressure, not a true buy/sell split."}</p>
+        : "Volume bars are coloured by the day's price direction - suggestive of pressure, not a true buy/sell split."}
+      Tap the chart to switch the hover box between date-only and full values.</p>
     </div>`;
 
   wirePicker();
 
   const chartEl = document.getElementById("chart");
   state.chart = echarts.init(chartEl);
+  attachTooltipToggle(state.chart);
   drawChart(inst, DEFAULT_RANGE);
 
   let currentRange = DEFAULT_RANGE;
@@ -499,13 +545,7 @@ function drawChart(inst, rangeKey) {
     const net = clip(series("cot_net", inst.id), days);
     const pct = clip(series("cot_percentile", inst.id), days);
     state.chart.setOption({
-      tooltip: {
-      trigger: "axis",
-      valueFormatter: (v) =>
-        typeof v === "number"
-          ? v.toLocaleString("en-GB", { maximumFractionDigits: 2 })
-          : v,
-    },
+      tooltip: tooltipConfig(),
       legend: { data: ["Net position", "Percentile"] },
       xAxis: { type: "category", data: net.map((p) => p[0]) },
       yAxis: [
@@ -546,8 +586,10 @@ function drawChart(inst, rangeKey) {
     return { value: volByDate[d] ?? 0, itemStyle: { color: up ? COLOURS.up : COLOURS.down } };
   });
 
-  // insider event markers
-  const evs = instrumentEvents(inst.id).filter((e) => dates.includes(e.date));
+  // insider event markers - awards and plan trades only when asked for
+  const evs = instrumentEvents(inst.id)
+    .filter((e) => dates.includes(e.date))
+    .filter((e) => on.awards || DIRECTIONAL_KINDS.includes(e.kind));
   const markPoints = evs.map((e) => {
     const mark = EVENT_MARKS[e.kind] || { glyph: "●", role: "accent", label: e.kind };
     return {
@@ -722,7 +764,7 @@ function drawChart(inst, rangeKey) {
           itemWidth: 18, itemHeight: 2, itemGap: 12,
           textStyle: { fontSize: 11 } }
       : undefined,
-    tooltip: { trigger: "axis" },
+    tooltip: tooltipConfig(),
     axisPointer: { link: [{ xAxisIndex: "all" }] },
     grid: grids,
     xAxis: xAxes,
