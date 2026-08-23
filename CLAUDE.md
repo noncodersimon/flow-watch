@@ -82,7 +82,9 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - Front end: vanilla JS + ECharts from CDN. Bump APP_VERSION in app.js on
   every front-end change (visible in footer - used to confirm deploys).
   Routes: #/ is the default instrument chart, #/i/<id> a chosen one,
-  #/screener the table.
+  #/screener the table. Chart overlays live in OVERLAYS in app.js and are
+  remembered per browser; all are derived client-side except the benchmark,
+  which is another instrument named by meta.json benchmarks[region].
 - Theme follows the Digitelos design system (github.com/noncodersimon/digitelos,
   css/main.css). Brand: cobalt #2B57DB, azure #17A2E8, vermilion #EF3F18,
   amber #F98E12, ink #0B0B10, parchment #ECEAE1. Chrome uses cobalt and azure
@@ -475,3 +477,33 @@ signal. This dashboard is about who is buying, and an average of price says
 nothing about that. They earn their place as context for reading the flow
 signals against, and because the 50/200 relationship is the one trend
 reference most people already have in their head.
+
+### 2026-08-23 - Indicators are derived in the browser, and default to quiet
+The chart gained a 20-day volume average, a rebased benchmark, relative
+volume, cumulative return and 20-day realised volatility. Every one is
+computed in app.js from series already loaded; only the benchmark costs
+anything, and that is one extra instrument document because a benchmark is
+just another instrument in the store. Nothing new is written to /data.
+
+Defaults follow what the dashboard is for. The 50 and 200 day averages, the
+volume average and the benchmark are on, because they are context you read
+the flow against. Relative volume, return and volatility are off, because a
+chart that opens with five stacked panels answers no question at all. The
+choices are remembered in localStorage.
+
+The benchmark is rebased to the instrument's price on the first day the two
+share, so both lines start together and the gap between them is the relative
+performance. It is deliberately not the index level, and the legend says
+"(rebased)" so it cannot be misread as one. Rejected: a second y-axis, which
+lets you make any two lines look alike by scaling.
+
+Panels are now built from a list rather than hardcoded, with heights from
+weights, so adding an indicator is one entry rather than a layout rewrite.
+The legend names only the price panel's overlays: the lower panels carry
+their own axis labels, and a scrolling legend showing two of five names is
+worse than none.
+
+ATR was asked for and is not here. It needs the day's high and low, and the
+store keeps only closes and volume, so it is a data change rather than a
+chart change - realised volatility from closes is the same question answered
+with what we already have.

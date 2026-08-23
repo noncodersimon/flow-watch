@@ -9,6 +9,14 @@
     "Global"
   ],
   "default_region": "UK",
+  "benchmarks": {
+    "UK": "VUKE.LON",
+    "US": "SPY",
+    "Europe": "VERX.LON",
+    "Asia": "VAPX.LON",
+    "Emerging Markets": "VFEM.LON",
+    "Global": "VWRL.LON"
+  },
   "instruments": [
     {
       "id": "SHEL.LON",

@@ -22,8 +22,12 @@ Be precise about what each number is - several look similar but mean different t
 
 Store shape: `data/instruments/<id>.json` = `{ "id", "updated", "metrics": { "<metric>": [["YYYY-MM-DD", value], ...] }, "events": [...] }`.
 A chart loads one of these on demand; the screener loads only `summary.json`.
-50 and 200 day moving averages are computed in the browser from the price
-series, not stored.
+Chart overlays - 50/200 day averages, a 20-day volume average, a rebased
+benchmark, relative volume, cumulative return and 20-day realised volatility
+- are all computed in the browser from the series already loaded. Only the
+benchmark costs an extra fetch, because it is another instrument. Averages,
+volume average and benchmark are on by default; the rest are one tap away
+and remembered per browser.
 History accumulates by merging in the repo, so sources that only return a recent
 window still build a full series over time.
 

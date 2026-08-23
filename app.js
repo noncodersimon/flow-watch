@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.9";
+const APP_VERSION = "1.0";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -46,6 +46,7 @@ const state = {
   summary: null,       // data/summary.json - latest values, no history
   docs: {},            // id -> data/instruments/<id>.json, fetched on demand
   region: null,
+  overlays: {},        // key -> on/off, remembered in localStorage
   sort: { key: "volRatio", dir: -1 },
   chart: null,
 };
@@ -271,10 +272,78 @@ function sma(points, window) {
   return out;
 }
 
+/* Annualised realised volatility from closes: the standard deviation of
+   daily log returns over the window, scaled by sqrt(252). ATR would be the
+   other candidate, but it needs the day's high and low and the store keeps
+   only closes and volume - adding it is a data change, not a chart change. */
+function realisedVol(points, window, periodsPerYear = 252) {
+  const rets = [];
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1][1], cur = points[i][1];
+    rets.push([points[i][0], prev > 0 && cur > 0 ? Math.log(cur / prev) : null]);
+  }
+  const out = [];
+  for (let i = 0; i < rets.length; i++) {
+    if (i < window - 1) { out.push([rets[i][0], null]); continue; }
+    const w = rets.slice(i - window + 1, i + 1).map((r) => r[1]);
+    if (w.some((v) => v == null)) { out.push([rets[i][0], null]); continue; }
+    const mean = w.reduce((a, b) => a + b, 0) / w.length;
+    const variance = w.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (w.length - 1);
+    out.push([rets[i][0], Math.sqrt(variance) * Math.sqrt(periodsPerYear) * 100]);
+  }
+  return out;
+}
+
+/* Cumulative percent return from the first point of whatever is shown, so it
+   answers "how has this done over the range I am looking at". */
+function cumulativeReturn(points) {
+  if (!points.length || !points[0][1]) return [];
+  const base = points[0][1];
+  return points.map((p) => [p[0], (p[1] / base - 1) * 100]);
+}
+
 const MOVING_AVERAGES = [
   { days: 50, role: "azure", label: "50d avg" },
   { days: 200, role: "amber", label: "200d avg" },
 ];
+
+/* Optional chart overlays. Everything here is derived in the browser from
+   series that are already loaded, except the benchmark, which costs one
+   extra instrument document. Defaults follow the same principle as the rest
+   of the dashboard: show what helps you read the flow, keep the rest one tap
+   away rather than crowding the chart. */
+const OVERLAYS = [
+  { key: "ma50",    label: "50d avg",   on: true },
+  { key: "ma200",   label: "200d avg",  on: true },
+  { key: "bench",   label: "Benchmark", on: true },
+  { key: "volavg",  label: "Vol avg",   on: true },
+  { key: "relvol",  label: "Rel volume", on: false },
+  { key: "returns", label: "Return",    on: false },
+  { key: "vol",     label: "Volatility", on: false },
+];
+
+function loadOverlayPrefs() {
+  const defaults = Object.fromEntries(OVERLAYS.map((o) => [o.key, o.on]));
+  try {
+    const saved = JSON.parse(localStorage.getItem("mf-overlays") || "{}");
+    for (const k of Object.keys(defaults)) {
+      if (typeof saved[k] === "boolean") defaults[k] = saved[k];
+    }
+  } catch { /* a corrupt preference is not worth breaking the chart over */ }
+  return defaults;
+}
+
+function saveOverlayPrefs() {
+  try { localStorage.setItem("mf-overlays", JSON.stringify(state.overlays)); } catch {}
+}
+
+/* The benchmark is just another instrument already in the store - meta.json
+   maps region to one, and an instrument may override it. Nothing benchmarks
+   against itself. */
+function benchmarkFor(inst) {
+  const id = inst.benchmark || ((state.meta.benchmarks || {})[inst.region]);
+  return id && id !== inst.id ? id : null;
+}
 
 /* ---------- instrument picker ---------- */
 
@@ -417,6 +486,10 @@ async function renderDetail(id, token) {
   const inst = state.meta.instruments.find((i) => i.id === id);
   if (!inst) { location.hash = "#/"; return; }
   await loadInstrument(id);
+  if (state.overlays.bench) {
+    const benchId = benchmarkFor(inst);
+    if (benchId) await loadInstrument(benchId);
+  }
   if (token !== undefined && token !== routeToken) return;  // superseded
 
   document.getElementById("app").innerHTML = `
@@ -426,6 +499,10 @@ async function renderDetail(id, token) {
       <div class="meta-line">${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
         `<button data-r="${r}" class="${r === DEFAULT_RANGE ? "active" : ""}">${r}</button>`).join("")}
+      </div>
+      <div class="overlays" role="group" aria-label="Chart overlays">${OVERLAYS.map((o) =>
+        `<button data-o="${o.key}" aria-pressed="${state.overlays[o.key] ? "true" : "false"}"
+                 class="${state.overlays[o.key] ? "active" : ""}">${o.label}</button>`).join("")}
       </div>
       <div id="chart"></div>
       <p class="panel-note">${inst.type === "commodity"
@@ -438,15 +515,32 @@ async function renderDetail(id, token) {
   wirePicker();
 
   const chartEl = document.getElementById("chart");
-  if (inst.type === "etf" && series("etf_flow", inst.id).length) chartEl.style.height = "540px";
   state.chart = echarts.init(chartEl);
   drawChart(inst, DEFAULT_RANGE);
 
+  let currentRange = DEFAULT_RANGE;
   document.querySelectorAll(".ranges button").forEach((b) =>
     b.addEventListener("click", () => {
       document.querySelectorAll(".ranges button").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
-      drawChart(inst, b.dataset.r);
+      currentRange = b.dataset.r;
+      drawChart(inst, currentRange);
+    })
+  );
+
+  document.querySelectorAll(".overlays button").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const key = b.dataset.o;
+      state.overlays[key] = !state.overlays[key];
+      saveOverlayPrefs();
+      b.classList.toggle("active", state.overlays[key]);
+      b.setAttribute("aria-pressed", state.overlays[key] ? "true" : "false");
+      // switching the benchmark on is the only overlay that needs data
+      if (key === "bench" && state.overlays.bench) {
+        const benchId = benchmarkFor(inst);
+        if (benchId) await loadInstrument(benchId);
+      }
+      drawChart(inst, currentRange);
     })
   );
 }
@@ -489,28 +583,27 @@ function drawChart(inst, rangeKey) {
   }
 
   const fullPrice = series("price", inst.id);
+  const fullVolume = series("volume", inst.id);
   const price = clip(fullPrice, days);
-  const vol = clip(series("volume", inst.id), days);
+  const vol = clip(fullVolume, days);
   const flow = inst.type === "etf" ? clip(series("etf_flow", inst.id), days) : [];
   const volByDate = Object.fromEntries(vol);
   const dates = price.map((p) => p[0]);
+  const visible = new Set(dates);
+  const on = state.overlays;
+
+  // Derived series are computed over the WHOLE history and clipped after, so
+  // the left edge of a short range is a true average rather than one that
+  // restarts at the edge of what is shown.
+  const clipDerived = (points) =>
+    points.filter((p) => visible.has(p[0])).map((p) => (p[1] == null ? null : round2(p[1])));
+  const hasAny = (arr) => arr.some((v) => v != null);
 
   // colour volume by day's price direction
   const volData = dates.map((d, i) => {
     const up = i === 0 || price[i][1] >= price[i - 1][1];
     return { value: volByDate[d] ?? 0, itemStyle: { color: up ? COLOURS.up : COLOURS.down } };
   });
-
-  // Moving averages, computed over all of history and then clipped, so the
-  // left edge of a 1M view is a true 200-day average rather than one that
-  // starts over at the edge of what is shown.
-  const visible = new Set(dates);
-  const averages = MOVING_AVERAGES.map((ma) => ({
-    ...ma,
-    data: sma(fullPrice, ma.days)
-      .filter((p) => visible.has(p[0]))
-      .map((p) => (p[1] == null ? null : round2(p[1]))),
-  })).filter((ma) => ma.data.some((v) => v != null));
 
   // insider event markers
   const evs = instrumentEvents(inst.id).filter((e) => dates.includes(e.date));
@@ -524,70 +617,169 @@ function drawChart(inst, rangeKey) {
     };
   });
 
-  const hasFlow = flow.length > 0;
-  const flowByDate = Object.fromEntries(flow);
-  let cum = 0;
-  const cumFlow = dates.map((d) => { cum += flowByDate[d] ?? 0; return Math.round(cum); });
-  const flowBars = dates.map((d) => {
-    const v = flowByDate[d] ?? 0;
-    return { value: v, itemStyle: { color: v >= 0 ? COLOURS.up : COLOURS.down } };
+  /* ----- price panel ----- */
+  const priceSeries = [
+    { name: "Price", type: "line", data: price.map((p) => p[1]), showSymbol: false,
+      lineStyle: { color: COLOURS.accent, width: 2 }, z: 3,
+      markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
+  ];
+  for (const ma of MOVING_AVERAGES) {
+    if (!on[ma.days === 50 ? "ma50" : "ma200"]) continue;
+    const data = clipDerived(sma(fullPrice, ma.days));
+    if (hasAny(data)) {
+      priceSeries.push({ name: ma.label, type: "line", data, showSymbol: false, z: 2,
+        lineStyle: { color: COLOURS[ma.role], width: 1.4 } });
+    }
+  }
+
+  // Benchmark, rebased to this instrument's price on the first day they share,
+  // so the two start together and the gap between them IS the relative
+  // performance. It is not the index level - the legend says "rebased".
+  const benchId = on.bench ? benchmarkFor(inst) : null;
+  const benchPoints = benchId ? series("price", benchId) : [];
+  if (benchPoints.length) {
+    const benchByDate = Object.fromEntries(benchPoints);
+    const anchor = dates.find((d) => benchByDate[d] != null);
+    if (anchor != null && benchByDate[anchor]) {
+      const anchorPrice = price[dates.indexOf(anchor)][1];
+      const factor = anchorPrice / benchByDate[anchor];
+      const data = dates.map((d) =>
+        benchByDate[d] != null ? round2(benchByDate[d] * factor) : null);
+      if (hasAny(data)) {
+        const benchInst = state.meta.instruments.find((i) => i.id === benchId);
+        priceSeries.push({
+          name: `${benchInst ? benchInst.name : benchId} (rebased)`,
+          type: "line", data, showSymbol: false, z: 1,
+          lineStyle: { color: COLOURS.muted, width: 1.2, type: "dashed" },
+        });
+      }
+    }
+  }
+
+  const panels = [{ weight: 3, axis: { type: "value", scale: true }, series: priceSeries }];
+
+  /* ----- volume panel ----- */
+  const volScale = axisScale(volData.map((v) => v.value));
+  const volumeSeries = [{ name: "Volume", type: "bar", data: volData }];
+  if (on.volavg) {
+    const data = clipDerived(sma(fullVolume, 20));
+    if (hasAny(data)) {
+      volumeSeries.push({ name: "Vol 20d avg", type: "line", data, showSymbol: false,
+        lineStyle: { color: COLOURS.accent, width: 1.3 }, z: 3 });
+    }
+  }
+  panels.push({
+    weight: 1.3,
+    axis: { type: "value", splitNumber: 2, name: axisName("Vol", volScale), nameGap: 8,
+            axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
+    series: volumeSeries,
   });
 
-  const grids = hasFlow
-    ? [
-        { left: 70, right: 20, top: 25, height: "40%" },
-        { left: 70, right: 20, top: "54%", height: "16%" },
-        { left: 70, right: 20, top: "78%", height: "16%" },
-      ]
-    : [
-        { left: 70, right: 20, top: 25, height: "55%" },
-        { left: 70, right: 20, top: "72%", height: "20%" },
-      ];
+  /* ----- ETF net flow panel ----- */
+  if (flow.length) {
+    const flowByDate = Object.fromEntries(flow);
+    let cum = 0;
+    const cumFlow = dates.map((d) => { cum += flowByDate[d] ?? 0; return Math.round(cum); });
+    const flowBars = dates.map((d) => {
+      const v = flowByDate[d] ?? 0;
+      return { value: v, itemStyle: { color: v >= 0 ? COLOURS.up : COLOURS.down } };
+    });
+    const flowScale = axisScale(flowBars.map((v) => v.value).concat(cumFlow));
+    panels.push({
+      weight: 1.3,
+      axis: { type: "value", splitNumber: 2, name: axisName("Flow", flowScale), nameGap: 8,
+              axisLabel: { formatter: (v) => scaledLabel(v, flowScale) } },
+      series: [
+        { name: "Net flow", type: "bar", data: flowBars },
+        { name: "Cumulative flow", type: "line", data: cumFlow, showSymbol: false,
+          lineStyle: { color: COLOURS.azure, width: 1.5 } },
+      ],
+    });
+  }
 
+  /* ----- optional panels, each with its own units ----- */
+  if (on.relvol) {
+    // the stored metric, so the panel and the screener's Vol vs avg agree
+    const data = clipDerived(series("volume_ratio", inst.id));
+    if (hasAny(data)) {
+      panels.push({
+        weight: 1.2,
+        axis: { type: "value", splitNumber: 2, name: "Rel vol", nameGap: 8,
+                axisLabel: { formatter: (v) => v + "x" } },
+        series: [{ name: "Rel volume", type: "line", data, showSymbol: false, step: "middle",
+                   lineStyle: { color: COLOURS.azure, width: 1.3 },
+                   markLine: { silent: true, symbol: "none",
+                     lineStyle: { color: COLOURS.muted, type: "dashed", width: 1 },
+                     data: [{ yAxis: 1 }], label: { show: false } } }],
+      });
+    }
+  }
+  if (on.returns) {
+    const data = cumulativeReturn(price).map((p) => round2(p[1]));
+    if (hasAny(data)) {
+      panels.push({
+        weight: 1.2,
+        axis: { type: "value", splitNumber: 2, name: "Return %", nameGap: 8 },
+        series: [{ name: "Return over range", type: "line", data, showSymbol: false,
+                   lineStyle: { color: COLOURS.accent, width: 1.4 },
+                   areaStyle: { opacity: 0.06 },
+                   markLine: { silent: true, symbol: "none",
+                     lineStyle: { color: COLOURS.muted, type: "dashed", width: 1 },
+                     data: [{ yAxis: 0 }], label: { show: false } } }],
+      });
+    }
+  }
+  if (on.vol) {
+    const data = clipDerived(realisedVol(fullPrice, 20));
+    if (hasAny(data)) {
+      panels.push({
+        weight: 1.2,
+        axis: { type: "value", splitNumber: 2, name: "Vol %", nameGap: 8 },
+        series: [{ name: "20d realised vol", type: "line", data, showSymbol: false,
+                   lineStyle: { color: COLOURS.amber, width: 1.4 } }],
+      });
+    }
+  }
+
+  /* ----- lay the panels out ----- */
+  const TOP = 8, BOTTOM = 12, GAP = 6;
+  const available = 100 - TOP - BOTTOM - GAP * (panels.length - 1);
+  const totalWeight = panels.reduce((sum, p) => sum + p.weight, 0);
+  let y = TOP;
+  const grids = panels.map((p) => {
+    const h = available * (p.weight / totalWeight);
+    const grid = { left: 62, right: 18, top: y + "%", height: h + "%" };
+    y += h + GAP;
+    return grid;
+  });
   const xAxes = grids.map((_, i) => ({
     type: "category", data: dates, gridIndex: i, show: i === grids.length - 1,
   }));
+  const yAxes = panels.map((p, i) => ({ ...p.axis, gridIndex: i }));
+  const chartSeries = panels.flatMap((p, i) =>
+    p.series.map((sr) => ({ ...sr, xAxisIndex: i, yAxisIndex: i })));
 
-  const volScale = axisScale(volData.map((v) => v.value));
-  const flowScale = axisScale(flowBars.map((v) => v.value).concat(cumFlow));
-
-  const yAxes = [
-    { type: "value", scale: true, gridIndex: 0 },
-    { type: "value", gridIndex: 1, splitNumber: 2,
-      name: axisName("Vol", volScale), nameGap: 8,
-      axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
-  ];
-  if (hasFlow) {
-    yAxes.push({ type: "value", gridIndex: 2, splitNumber: 2,
-      name: axisName("Flow", flowScale), nameGap: 8,
-      axisLabel: { formatter: (v) => scaledLabel(v, flowScale) } });
+  // the chart has to grow as panels are switched on, or they squash
+  const el = document.getElementById("chart");
+  if (el) {
+    const perPanel = window.innerWidth < 640 ? 96 : 118;
+    el.style.height = (170 + perPanel * panels.length) + "px";
+    state.chart.resize({ height: el.clientHeight });
   }
 
-  const chartSeries = [
-    { name: "Price", type: "line", data: price.map((p) => p[1]),
-      showSymbol: false, lineStyle: { color: COLOURS.accent, width: 2 },
-      xAxisIndex: 0, yAxisIndex: 0,
-      markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
-    { name: "Volume", type: "bar", data: volData, xAxisIndex: 1, yAxisIndex: 1 },
-    ...averages.map((ma) => ({
-      name: ma.label, type: "line", data: ma.data, showSymbol: false,
-      xAxisIndex: 0, yAxisIndex: 0, z: 1,
-      lineStyle: { color: COLOURS[ma.role], width: 1.4 },
-    })),
-  ];
-  if (hasFlow) {
-    chartSeries.push(
-      { name: "Net flow", type: "bar", data: flowBars, xAxisIndex: 2, yAxisIndex: 2 },
-      { name: "Cumulative flow", type: "line", data: cumFlow, showSymbol: false,
-        xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: COLOURS.azure, width: 1.5 } },
-    );
-  }
+  // Only the price panel's overlays need naming - the lower panels each carry
+  // their own axis label, and a scrolling legend that shows two of five names
+  // is worse than no legend at all.
+  const lineNames = panels[0].series
+    .filter((sr) => sr.type === "line" && sr.name !== "Price")
+    .map((sr) => sr.name);
 
   state.chart.setOption({
     textStyle: { fontFamily: CHART_FONT },
-    legend: averages.length
-      ? { data: averages.map((ma) => ma.label), top: 0, right: 8,
-          itemWidth: 18, itemHeight: 2, textStyle: { fontSize: 11 } }
+    legend: lineNames.length
+      ? { data: lineNames, top: 0, left: 56, right: 8,
+          itemWidth: 18, itemHeight: 2, itemGap: 12,
+          textStyle: { fontSize: 11 } }
       : undefined,
     tooltip: { trigger: "axis" },
     axisPointer: { link: [{ xAxisIndex: "all" }] },
@@ -634,6 +826,7 @@ async function route() {
 
 (async function init() {
   readColours();
+  state.overlays = loadOverlayPrefs();
   const ok = await loadAll();
   if (!ok) {
     document.getElementById("app").innerHTML =

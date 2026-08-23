@@ -112,6 +112,36 @@ class MetaTest(unittest.TestCase):
                 with self.subTest(instrument=inst["id"]):
                     self.assertTrue(inst.get("yahoo"))
 
+    def test_every_region_has_a_benchmark_that_exists(self):
+        """app.js rebases the chart against meta.benchmarks[region]. A region
+        with no entry silently loses the overlay; an entry naming an
+        instrument that is not in the store silently draws nothing."""
+        benchmarks = self.meta.get("benchmarks", {})
+        known = {i["id"] for i in self.meta["instruments"]}
+        for region in self.meta["regions"]:
+            with self.subTest(region=region):
+                self.assertIn(region, benchmarks, "region has no benchmark")
+                self.assertIn(benchmarks[region], known, "benchmark is not an instrument")
+
+    def test_benchmarks_are_instruments_with_a_price_series(self):
+        # a benchmark with no price history rebases against nothing
+        docs = instrument_docs()
+        for region, bid in self.meta.get("benchmarks", {}).items():
+            with self.subTest(region=region, benchmark=bid):
+                doc = docs.get(bid)
+                if doc is None:
+                    continue  # not fetched yet; the adapter reports it
+                self.assertIn("price", doc["metrics"])
+
+    def test_instrument_benchmark_overrides_are_valid(self):
+        known = {i["id"] for i in self.meta["instruments"]}
+        for inst in self.meta["instruments"]:
+            if "benchmark" in inst:
+                with self.subTest(instrument=inst["id"]):
+                    self.assertIn(inst["benchmark"], known)
+                    self.assertNotEqual(inst["benchmark"], inst["id"],
+                                        "an instrument cannot benchmark against itself")
+
     def test_currencies_are_ones_the_ui_and_adapters_understand(self):
         # GBX drives the /100 scaling in etf_flows.py and the "p" suffix in
         # the UI, so an unknown code would silently fall through both.
