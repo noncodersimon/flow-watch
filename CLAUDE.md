@@ -579,3 +579,19 @@ turns CI red instead of rendering quietly wrong. If Yahoo cannot be asked
 (rate limits), the instrument seeds on the meta.json label with a warning
 rather than stalling. This is what made seeding 58 ETFs with best-guess
 currencies safe: the guesses are policed by the source itself.
+
+### 2026-08-23 - Yahoo serves two FTSE lines in dollars, and the label follows the data
+The seed-time verifier refused CPG.L and IHG.L because Yahoo's metadata
+said USD for what are pence-quoted FTSE ordinary shares. Yahoo's own quote
+pages show GBp, so trust_currency was added to override the metadata - and
+the first seeded values proved the metadata right and the override wrong:
+Compass arrived at 30.93 against a ~2,300p quote. Yahoo genuinely serves
+these two lines' price history converted to US dollars, whatever its quote
+page displays. The labels are now USD, because the currency field describes
+the numbers in the store, not what the LSE would quote - a GBX label on
+dollar data is precisely the corruption this machinery exists to prevent.
+The trust_currency escape hatch stays in the adapter for a genuine
+metadata-only quirk, but the lesson recorded here is the opposite one:
+when metadata and served data agree with each other and disagree with your
+prior, the source is telling the truth. Both instruments' stored series are
+coherent (a single currency throughout), so nothing needs re-seeding.

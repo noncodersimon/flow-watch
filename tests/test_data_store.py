@@ -165,11 +165,20 @@ class MetaTest(unittest.TestCase):
                 with self.subTest(instrument=inst["id"]):
                     self.assertIn(inst["currency"], {"GBX", "GBP", "USD"})
 
+    # LSE quotes these in pence like every other ordinary share, but Yahoo -
+    # our price source - serves their history converted to US dollars (first
+    # seed came back at 30.93 for Compass against a ~2,300p quote). The label
+    # describes the stored data, so these two are USD until the source
+    # changes. See the decision log.
+    UK_EQUITIES_YAHOO_SERVES_IN_USD = {"CPG.LON", "IHG.LON"}
+
     def test_uk_equities_are_still_priced_in_pence(self):
         # the pence convention does hold for ordinary shares, and that is what
         # makes BP read 549.50p rather than 549 pounds
         for inst in self.meta["instruments"]:
             if inst["id"].endswith(".LON") and inst["type"] == "equity":
+                if inst["id"] in self.UK_EQUITIES_YAHOO_SERVES_IN_USD:
+                    continue
                 with self.subTest(instrument=inst["id"]):
                     self.assertEqual(inst["currency"], "GBX")
 
