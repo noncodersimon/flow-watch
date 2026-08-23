@@ -35,6 +35,25 @@ EVENT_KINDS = {"pdmr_buy", "pdmr_sell", "pdmr_award", "pdmr_scheduled", "tr1_up"
 INSTRUMENT_TYPES = {"equity", "etf", "commodity"}
 
 
+def store(metric):
+    """Per-metric view, assembled from the per-instrument files the way the
+    adapters see it."""
+    common._DOCS = None
+    return common.load_store(metric)
+
+
+def instrument_docs():
+    d = common.INSTRUMENT_DIR
+    if not os.path.isdir(d):
+        return {}
+    out = {}
+    for name in sorted(os.listdir(d)):
+        if name.endswith(".json"):
+            with open(os.path.join(d, name), encoding="utf-8") as f:
+                out[name[:-5]] = json.load(f)
+    return out
+
+
 def load(name):
     path = os.path.join(DATA_DIR, name)
     if not os.path.exists(path):
@@ -128,25 +147,27 @@ class SeriesStoreTest(unittest.TestCase):
 
     def stores(self):
         for metric in SERIES_METRICS:
-            store = load(f"{metric}.json")
-            if store is not None:
-                yield metric, store
+            s = store(metric)
+            if s["series"]:
+                yield metric, s
 
-    def test_every_series_metric_file_exists(self):
-        for metric in SERIES_METRICS:
-            with self.subTest(metric=metric):
-                self.assertIsNotNone(
-                    load(f"{metric}.json"), f"data/{metric}.json is missing"
-                )
+    def test_there_are_instrument_documents(self):
+        self.assertTrue(instrument_docs(), "data/instruments/ is empty")
 
-    def test_top_level_shape(self):
-        for metric, store in self.stores():
-            with self.subTest(metric=metric):
-                self.assertIn("updated", store)
-                self.assertIn("series", store)
-                self.assertIsInstance(store["series"], dict)
-                if store["updated"] is not None:
-                    self.assertTrue(is_iso_date(store["updated"]))
+    def test_document_shape(self):
+        for iid, doc in instrument_docs().items():
+            with self.subTest(instrument=iid):
+                self.assertEqual(doc.get("id"), iid, "id must match the filename")
+                self.assertIn(iid, self.known_ids, "not an instrument in meta.json")
+                self.assertIsInstance(doc.get("metrics"), dict)
+                self.assertIsInstance(doc.get("events"), list)
+                self.assertTrue(is_iso_date(doc.get("updated")))
+
+    def test_documents_hold_only_known_metrics(self):
+        known = set(SERIES_METRICS)
+        for iid, doc in instrument_docs().items():
+            with self.subTest(instrument=iid):
+                self.assertEqual(set(doc["metrics"]) - known, set())
 
     def test_points_are_date_value_pairs(self):
         for metric, store in self.stores():
@@ -184,23 +205,20 @@ class SeriesStoreTest(unittest.TestCase):
                 self.assertEqual(orphans, set(), f"unknown ids in {metric}.json")
 
     def test_percentiles_are_within_bounds(self):
-        store = load("cot_percentile.json")
-        for sid, points in store["series"].items():
+        for sid, points in store("cot_percentile")["series"].items():
             with self.subTest(instrument=sid):
                 for d, v in points:
                     self.assertGreaterEqual(v, 0.0, f"{sid} {d}")
                     self.assertLessEqual(v, 100.0, f"{sid} {d}")
 
     def test_volume_ratios_are_positive(self):
-        store = load("volume_ratio.json")
-        for sid, points in store["series"].items():
+        for sid, points in store("volume_ratio")["series"].items():
             with self.subTest(instrument=sid):
                 for d, v in points:
                     self.assertGreater(v, 0.0, f"{sid} {d} ratio should be > 0")
 
     def test_share_counts_are_positive(self):
-        store = load("etf_shares.json")
-        for sid, points in store["series"].items():
+        for sid, points in store("etf_shares")["series"].items():
             with self.subTest(instrument=sid):
                 for d, v in points:
                     self.assertGreater(v, 0.0, f"{sid} {d} share count should be > 0")
@@ -210,56 +228,70 @@ class SeriesStoreTest(unittest.TestCase):
             i["id"] for i in self.meta["instruments"] if i["type"] == "commodity"
         }
         for metric in ("cot_net", "cot_percentile"):
-            store = load(f"{metric}.json")
             with self.subTest(metric=metric):
-                self.assertTrue(set(store["series"]) <= commodities)
+                self.assertTrue(set(store(metric)["series"]) <= commodities)
 
     def test_etf_flow_series_belong_to_etfs(self):
         etfs = {i["id"] for i in self.meta["instruments"] if i["type"] == "etf"}
         for metric in ("etf_flow", "etf_flow_pct", "etf_shares"):
-            store = load(f"{metric}.json")
             with self.subTest(metric=metric):
-                self.assertTrue(set(store["series"]) <= etfs)
+                self.assertTrue(set(store(metric)["series"]) <= etfs)
 
 
 class EventStoreTest(unittest.TestCase):
-    def test_shape(self):
-        store = load("events.json")
-        self.assertIsNotNone(store, "data/events.json is missing")
-        self.assertIn("updated", store)
-        self.assertIn("events", store)
-        self.assertIsInstance(store["events"], dict)
-
     def test_events_are_well_formed(self):
-        # currently empty - informed_money.py is a stub. These assertions
-        # start doing real work the moment the RNS adapter lands.
-        store = load("events.json")
         meta = load("meta.json")
         known = {i["id"] for i in meta["instruments"]}
-        for sid, events in store["events"].items():
+        for sid, events in instrument_docs().items():
             with self.subTest(instrument=sid):
                 self.assertIn(sid, known)
-                for ev in events:
+                for ev in events["events"]:
                     self.assertTrue(is_iso_date(ev.get("date")))
                     self.assertIn(ev.get("kind"), EVENT_KINDS)
 
 
-class FrontEndAgreementTest(unittest.TestCase):
-    """app.js reads /data directly, so its metric list has to match reality."""
+class SummaryTest(unittest.TestCase):
+    """summary.json is the only file the screener loads, so if it drifts from
+    the instrument documents the table silently shows stale numbers."""
 
-    def test_every_metric_app_js_loads_exists_on_disk(self):
-        with open(os.path.join(REPO_ROOT, "app.js"), encoding="utf-8") as f:
-            source = f.read()
-        match = re.search(r"const METRICS\s*=\s*\[(.*?)\]", source, re.S)
-        self.assertIsNotNone(match, "could not find METRICS in app.js")
-        metrics = re.findall(r'"([^"]+)"', match.group(1))
-        self.assertTrue(metrics, "METRICS list parsed empty")
-        for metric in metrics:
-            with self.subTest(metric=metric):
-                self.assertTrue(
-                    os.path.exists(os.path.join(DATA_DIR, f"{metric}.json")),
-                    f"app.js loads data/{metric}.json but it does not exist",
-                )
+    @classmethod
+    def setUpClass(cls):
+        cls.summary = load("summary.json")
+        cls.meta = load("meta.json")
+        cls.docs = instrument_docs()
+
+    def test_exists_and_is_shaped(self):
+        self.assertIsNotNone(self.summary, "data/summary.json is missing")
+        self.assertTrue(is_iso_date(self.summary["updated"]))
+        self.assertIsInstance(self.summary["instruments"], dict)
+
+    def test_rows_are_known_instruments(self):
+        known = {i["id"] for i in self.meta["instruments"]}
+        self.assertEqual(set(self.summary["instruments"]) - known, set())
+
+    def test_latest_values_match_the_documents(self):
+        for iid, row in self.summary["instruments"].items():
+            doc = self.docs.get(iid, {"metrics": {}})
+            for metric in common.SUMMARY_METRICS:
+                if metric not in row:
+                    continue
+                points = doc["metrics"].get(metric)
+                with self.subTest(instrument=iid, metric=metric):
+                    self.assertTrue(points, f"{iid} summarises {metric} it does not have")
+                    self.assertEqual(row[metric], points[-1][1],
+                                     "summary is stale against the series")
+
+    def test_event_counts_use_known_kinds(self):
+        for iid, row in self.summary["instruments"].items():
+            for kind in row.get("events30", {}):
+                with self.subTest(instrument=iid):
+                    self.assertIn(kind, EVENT_KINDS)
+
+    def test_every_instrument_with_data_is_summarised(self):
+        for iid, doc in self.docs.items():
+            if doc["metrics"] or doc["events"]:
+                with self.subTest(instrument=iid):
+                    self.assertIn(iid, self.summary["instruments"])
 
 
 if __name__ == "__main__":

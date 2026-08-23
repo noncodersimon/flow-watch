@@ -9,17 +9,21 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   06:30 UTC Mon-Sat) runs Python adapters that fetch data, compute derived daily
   figures, and commit JSON to /data. GitHub Pages serves the static front end
   (index.html, app.js, style.css at repo root) which reads that JSON.
-- Store shape: one JSON file per metric -
-  { "updated": "YYYY-MM-DD", "series": { "<id>": [["YYYY-MM-DD", value], ...] } }
-  plus data/events.json for event-type data (director dealings, TR-1s).
+- Store shape: one JSON file per INSTRUMENT, data/instruments/<id>.json -
+  { "id", "updated", "metrics": { "<metric>": [["YYYY-MM-DD", value], ...] },
+  "events": [ ... ] } - plus data/summary.json, a latest-value digest the
+  screener reads so a phone draws the table without downloading history.
+  Adapters still work a metric at a time through load_store/save_store in
+  common.py; the per-instrument layout is assembled underneath.
 - History accumulates by MERGING in the repo (adapters/common.py). Sources that
   return only a recent window still build full series over time. Never overwrite
   a series wholesale; always merge.
 - data/meta.json is the single source of truth for instruments, hierarchy
   (region/sector/type), currencies and source IDs (cftc_code, yahoo). Add
   instruments there; adapters and UI pick them up.
-- New data sources = new adapter + new metric file. Front end reads only from
-  /data. This keeps phase 2 (paid tick data) a pure addition.
+- New data sources = new adapter + a new metric name inside the instrument
+  documents. Front end reads only from /data. This keeps phase 2 (paid tick
+  data) a pure addition. build_summary.py runs last and must stay last.
 
 ## Metric semantics - keep the UI honest
 
@@ -425,3 +429,49 @@ Asian equity would carry a permanently blank Insider column and look
 broken where it is merely out of scope. ETFs never had insider data, so
 nothing looks missing. Revisit foreign equities if an insider source that
 covers them ever arrives.
+
+### 2026-08-23 - The store is per instrument, not per metric
+The front end used to fetch every metric for every instrument on every
+visit. That was fine at 100 points and 18 instruments; at five years and
+26 it is about 500KB gzipped, and it grows on both axes at once, so
+history depth and coverage were competing for the same budget. Neither
+consumer ever wanted the whole store: a chart needs one instrument, and
+the screener needs one number per instrument.
+
+So data/<metric>.json is gone and data/instruments/<id>.json holds that
+instrument's metrics and events, with data/summary.json carrying latest
+values and 30-day event counts. The screener now loads meta.json and
+summary.json - half a kilobyte gzipped against the 264KB it used to pull -
+and a chart fetches one instrument file on demand and keeps it.
+
+Adapters were not touched. load_store, merge_series and save_store still
+present a metric at a time and the per-instrument files are assembled
+underneath, which is what kept a change of this size to one module plus the
+front end. The migration was verified by reading every old series back
+through that API and comparing: no mismatches.
+
+Two consequences worth remembering. build_summary.py must run last in the
+workflow, because it reads what the other adapters wrote. And summary.json
+counts events by kind rather than totalling them, so the rule about which
+kinds are a signal stays in app.js alone instead of being restated in
+Python where the two could drift.
+
+### 2026-08-23 - Moving averages are computed in the browser, not stored
+50 and 200 day averages are drawn on the price chart. They are derived in
+app.js from the price series that is already loaded, rather than stored as
+metrics: storing them would add two more series to every instrument file to
+carry numbers that a loop can produce for free.
+
+Two details that matter. They are computed over the whole series and
+clipped afterwards, so the left edge of a 1M view is a true 200-day average
+rather than one that restarts at the edge of what is shown. And points
+before the window is full are null rather than a partial average, so a line
+starts where it becomes real - which is why only the 50 day average draws
+today, on 100 points of history. A 200-day average taken from 40 days is a
+different statistic wearing the same label.
+
+Worth being honest about what they are: a price trend overlay, not a flow
+signal. This dashboard is about who is buying, and an average of price says
+nothing about that. They earn their place as context for reading the flow
+signals against, and because the 50/200 relationship is the one trend
+reference most people already have in their head.

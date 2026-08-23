@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.8";
+const APP_VERSION = "0.9";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -22,14 +22,14 @@ const EVENT_MARKS = {
    style.css are the one source of truth - retheme there and the chart follows.
    Fallbacks keep it drawable if the stylesheet ever fails to load. */
 const COLOURS = { up: "#1F7A4D", down: "#C9300C", accent: "#2B57DB",
-                  azure: "#17A2E8", muted: "#55555F" };
+                  azure: "#17A2E8", amber: "#F98E12", muted: "#55555F" };
 const CHART_FONT = "Inter, system-ui, -apple-system, sans-serif";
 
 function readColours() {
   const css = getComputedStyle(document.documentElement);
   for (const [role, token] of Object.entries({
     up: "--up", down: "--down", accent: "--accent",
-    azure: "--azure", muted: "--neutral",
+    azure: "--azure", amber: "--amber", muted: "--neutral",
   })) {
     const v = css.getPropertyValue(token).trim();
     if (v) COLOURS[role] = v;
@@ -43,16 +43,21 @@ const DEFAULT_INSTRUMENT = "VUKE.LON";
 
 const state = {
   meta: null,
-  stores: {},          // metric -> { updated, series: { id: [[date, value], ...] } }
-  events: {},          // id -> [event, ...]
+  summary: null,       // data/summary.json - latest values, no history
+  docs: {},            // id -> data/instruments/<id>.json, fetched on demand
   region: null,
   sort: { key: "volRatio", dir: -1 },
   chart: null,
 };
 
-const METRICS = ["price", "volume", "volume_ratio", "cot_net", "cot_percentile", "etf_flow", "etf_flow_pct"];
+/* ---------- data loading ----------
 
-/* ---------- data loading ---------- */
+   The screener reads data/summary.json alone: latest value per metric and
+   30-day event counts, about half a kilobyte gzipped. A chart then loads
+   that one instrument's file on demand and keeps it, so moving between
+   instruments costs one small request each and never the whole store.
+   History depth and the instrument count can both grow now without making
+   the first paint slower. */
 
 async function loadJSON(path) {
   try {
@@ -68,22 +73,33 @@ async function loadAll() {
   state.meta = await loadJSON("data/meta.json");
   if (!state.meta) return false;
   state.region = localStorage.getItem("mf-region") || state.meta.default_region;
-
-  const results = await Promise.all(METRICS.map((m) => loadJSON(`data/${m}.json`)));
-  METRICS.forEach((m, i) => { state.stores[m] = results[i] || { updated: null, series: {} }; });
-
-  const ev = await loadJSON("data/events.json");
-  state.events = (ev && ev.events) || {};
+  state.summary = (await loadJSON("data/summary.json")) || { instruments: {} };
   return true;
 }
 
-function series(metric, id) {
-  return (state.stores[metric] && state.stores[metric].series[id]) || [];
+async function loadInstrument(id) {
+  if (!state.docs[id]) {
+    state.docs[id] =
+      (await loadJSON(`data/instruments/${encodeURIComponent(id)}.json`)) ||
+      { id, metrics: {}, events: [] };
+  }
+  return state.docs[id];
 }
 
-function lastValue(metric, id) {
-  const s = series(metric, id);
-  return s.length ? s[s.length - 1][1] : null;
+function summaryRow(id) {
+  return (state.summary && state.summary.instruments[id]) || {};
+}
+
+/* Only meaningful once the instrument's document has been fetched, which is
+   why every caller sits inside the detail view. */
+function series(metric, id) {
+  const doc = state.docs[id];
+  return (doc && doc.metrics && doc.metrics[metric]) || [];
+}
+
+function instrumentEvents(id) {
+  const doc = state.docs[id];
+  return (doc && doc.events) || [];
 }
 
 /* ---------- helpers ---------- */
@@ -147,10 +163,11 @@ function scaledLabel(v, scale) {
   return Math.abs(n) < 10 && n !== 0 ? n.toFixed(1) : String(Math.round(n));
 }
 
-function recentEventCount(id, days = 30) {
-  const evs = state.events[id] || [];
-  const cutoff = new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10);
-  return evs.filter((e) => e.date >= cutoff && DIRECTIONAL_KINDS.includes(e.kind)).length;
+/* summary.json counts events by kind and leaves the judgement here: awards
+   and Rule 10b5-1 plan trades are recorded but are not insider activity. */
+function recentEventCount(id) {
+  const counts = summaryRow(id).events30 || {};
+  return DIRECTIONAL_KINDS.reduce((n, k) => n + (counts[k] || 0), 0);
 }
 
 /* ---------- screener view ---------- */
@@ -160,10 +177,10 @@ function screenerRows() {
     state.region === "All" || inst.region === state.region;
   return state.meta.instruments.filter(inRegion).map((inst) => ({
     inst,
-    price: lastValue("price", inst.id),
-    volRatio: lastValue("volume_ratio", inst.id),
-    flowPct: lastValue("etf_flow_pct", inst.id),
-    cotPct: lastValue("cot_percentile", inst.id),
+    price: summaryRow(inst.id).price ?? null,
+    volRatio: summaryRow(inst.id).volume_ratio ?? null,
+    flowPct: summaryRow(inst.id).etf_flow_pct ?? null,
+    cotPct: summaryRow(inst.id).cot_percentile ?? null,
     events: recentEventCount(inst.id),
   }));
 }
@@ -232,6 +249,32 @@ function renderScreener() {
     tr.addEventListener("click", () => { location.hash = "#/i/" + tr.dataset.id; })
   );
 }
+
+/* Simple moving average over [[date, value], ...].
+
+   Points before the window is full are null rather than a partial average,
+   so the line simply starts where it becomes real - a 200-day average drawn
+   from 40 days of data would be a different statistic wearing the same
+   label. Computed over the whole series and clipped afterwards, so the left
+   edge of a short range is still a true average rather than one that
+   restarts at the edge. */
+function round2(v) { return Math.round(v * 100) / 100; }
+
+function sma(points, window) {
+  const out = [];
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    sum += points[i][1];
+    if (i >= window) sum -= points[i - window][1];
+    out.push([points[i][0], i >= window - 1 ? sum / window : null]);
+  }
+  return out;
+}
+
+const MOVING_AVERAGES = [
+  { days: 50, role: "azure", label: "50d avg" },
+  { days: 200, role: "amber", label: "200d avg" },
+];
 
 /* ---------- instrument picker ---------- */
 
@@ -370,9 +413,11 @@ function wirePicker() {
 const RANGES = { "1W": 7, "1M": 31, "6M": 183, "1Y": 366, "5Y": 1830, "Max": 99999 };
 const DEFAULT_RANGE = "1Y";
 
-function renderDetail(id) {
+async function renderDetail(id, token) {
   const inst = state.meta.instruments.find((i) => i.id === id);
   if (!inst) { location.hash = "#/"; return; }
+  await loadInstrument(id);
+  if (token !== undefined && token !== routeToken) return;  // superseded
 
   document.getElementById("app").innerHTML = `
     <div class="detail">
@@ -443,7 +488,8 @@ function drawChart(inst, rangeKey) {
     return;
   }
 
-  const price = clip(series("price", inst.id), days);
+  const fullPrice = series("price", inst.id);
+  const price = clip(fullPrice, days);
   const vol = clip(series("volume", inst.id), days);
   const flow = inst.type === "etf" ? clip(series("etf_flow", inst.id), days) : [];
   const volByDate = Object.fromEntries(vol);
@@ -455,8 +501,19 @@ function drawChart(inst, rangeKey) {
     return { value: volByDate[d] ?? 0, itemStyle: { color: up ? COLOURS.up : COLOURS.down } };
   });
 
+  // Moving averages, computed over all of history and then clipped, so the
+  // left edge of a 1M view is a true 200-day average rather than one that
+  // starts over at the edge of what is shown.
+  const visible = new Set(dates);
+  const averages = MOVING_AVERAGES.map((ma) => ({
+    ...ma,
+    data: sma(fullPrice, ma.days)
+      .filter((p) => visible.has(p[0]))
+      .map((p) => (p[1] == null ? null : round2(p[1]))),
+  })).filter((ma) => ma.data.some((v) => v != null));
+
   // insider event markers
-  const evs = (state.events[inst.id] || []).filter((e) => dates.includes(e.date));
+  const evs = instrumentEvents(inst.id).filter((e) => dates.includes(e.date));
   const markPoints = evs.map((e) => {
     const mark = EVENT_MARKS[e.kind] || { glyph: "●", role: "accent", label: e.kind };
     return {
@@ -512,6 +569,11 @@ function drawChart(inst, rangeKey) {
       xAxisIndex: 0, yAxisIndex: 0,
       markPoint: { data: markPoints, symbolSize: 1, label: { fontSize: 14 } } },
     { name: "Volume", type: "bar", data: volData, xAxisIndex: 1, yAxisIndex: 1 },
+    ...averages.map((ma) => ({
+      name: ma.label, type: "line", data: ma.data, showSymbol: false,
+      xAxisIndex: 0, yAxisIndex: 0, z: 1,
+      lineStyle: { color: COLOURS[ma.role], width: 1.4 },
+    })),
   ];
   if (hasFlow) {
     chartSeries.push(
@@ -523,6 +585,10 @@ function drawChart(inst, rangeKey) {
 
   state.chart.setOption({
     textStyle: { fontFamily: CHART_FONT },
+    legend: averages.length
+      ? { data: averages.map((ma) => ma.label), top: 0, right: 8,
+          itemWidth: 18, itemHeight: 2, textStyle: { fontSize: 11 } }
+      : undefined,
     tooltip: { trigger: "axis" },
     axisPointer: { link: [{ xAxisIndex: "all" }] },
     grid: grids,
@@ -549,16 +615,21 @@ function renderRegions() {
   );
 }
 
-function route() {
+let routeToken = 0;
+
+async function route() {
+  // an instrument document is fetched on demand, so two quick taps can have
+  // two renders in flight - only the newest may touch the DOM
+  const token = ++routeToken;
   if (state.chart) { state.chart.dispose(); state.chart = null; }
   const h = location.hash;
   const onScreener = h.startsWith("#/screener");
   // the region filter belongs to the screener; on a chart the picker does that
   document.getElementById("regions").style.display = onScreener ? "" : "none";
-  if (onScreener) renderScreener();
-  else if (h.startsWith("#/i/")) renderDetail(decodeURIComponent(h.slice(4)));
-  else renderDetail(defaultInstrumentId());
   window.scrollTo(0, 0);
+  if (onScreener) { renderScreener(); return; }
+  const id = h.startsWith("#/i/") ? decodeURIComponent(h.slice(4)) : defaultInstrumentId();
+  await renderDetail(id, token);
 }
 
 (async function init() {
@@ -569,9 +640,10 @@ function route() {
       '<p class="empty">Could not load data/meta.json - is the site being served from the repo root?</p>';
     return;
   }
-  const updates = METRICS.map((m) => state.stores[m].updated).filter(Boolean);
   document.getElementById("updated").textContent =
-    updates.length ? "Data updated " + updates.sort().slice(-1)[0] : "No data yet";
+    state.summary && state.summary.updated
+      ? "Data updated " + state.summary.updated
+      : "No data yet";
   document.getElementById("version").textContent = "v" + APP_VERSION;
   renderRegions();
   window.addEventListener("hashchange", route);

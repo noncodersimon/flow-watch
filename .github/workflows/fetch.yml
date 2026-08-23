@@ -34,6 +34,7 @@ jobs:
           python etf_flows.py
           python informed_money.py
           python sec_form4.py
+          python build_summary.py
 
       - name: Commit updated data
         run: |

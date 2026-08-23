@@ -9,17 +9,21 @@ front end that reads it.
 
 Be precise about what each number is - several look similar but mean different things.
 
-| Metric | File | What it actually is |
+| Metric | Where | What it actually is |
 |---|---|---|
-| price | data/price.json | Daily close (GBX for LSE equities, note pence vs pounds) |
-| volume | data/volume.json | Total shares traded - activity, NOT net buying |
-| volume_ratio | data/volume_ratio.json | Volume / its own 20-day average. The screener's "unusualness" score |
-| cot_net | data/cot_net.json | CFTC non-commercial (speculator) net position, contracts, weekly |
-| cot_percentile | data/cot_percentile.json | cot_net as a percentile of its own fetched history |
-| etf_flow / etf_flow_pct | (stub) | True net creations/redemptions - the only genuine "net buying" here |
-| events | data/events.json | Insider activity. UK: PDMR dealings and TR-1 holdings from RNS via Investegate. US: SEC Form 4. Kinds: `pdmr_buy`, `pdmr_sell`, `pdmr_award`, `pdmr_scheduled`, `tr1_up`, `tr1_down`. `value_gbp` covers sterling tranches only and is null for dealings quoted in EUR/USD |
+| price | instruments/<id>.json | Daily close in the instrument's own currency (pence for UK shares, pounds for most LSE ETFs) |
+| volume | instruments/<id>.json | Total shares traded - activity, NOT net buying |
+| volume_ratio | instruments/<id>.json | Volume / its own 20-day average. The screener's "unusualness" score |
+| cot_net | instruments/<id>.json | CFTC non-commercial (speculator) net position, contracts, weekly |
+| cot_percentile | instruments/<id>.json | cot_net as a percentile of its own fetched history |
+| etf_flow / etf_flow_pct | instruments/<id>.json | True net creations/redemptions - the only genuine "net buying" here |
+| events | instruments/<id>.json | Insider activity. UK: PDMR dealings and TR-1 holdings from RNS via Investegate. US: SEC Form 4. Kinds: `pdmr_buy`, `pdmr_sell`, `pdmr_award`, `pdmr_scheduled`, `tr1_up`, `tr1_down`. `value_gbp` covers sterling tranches only and is null for dealings quoted in EUR/USD |
+| summary | data/summary.json | Latest value per metric plus 30-day event counts. The only file the screener loads |
 
-Store shape for time series: `{ "updated": "YYYY-MM-DD", "series": { "<id>": [["YYYY-MM-DD", value], ...] } }`.
+Store shape: `data/instruments/<id>.json` = `{ "id", "updated", "metrics": { "<metric>": [["YYYY-MM-DD", value], ...] }, "events": [...] }`.
+A chart loads one of these on demand; the screener loads only `summary.json`.
+50 and 200 day moving averages are computed in the browser from the price
+series, not stored.
 History accumulates by merging in the repo, so sources that only return a recent
 window still build a full series over time.
 
