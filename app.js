@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.6";
+const APP_VERSION = "1.7";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -708,8 +708,10 @@ function drawChart(inst, rangeKey) {
     return {
       coord: [e.date, price[dates.indexOf(e.date)][1]],
       value: mark.glyph,
-      // an invisible 18px symbol behind the glyph - a 1px hit target cannot
-      // be tapped on a phone; the glyph itself is the label
+      // an invisible 18px CIRCLE behind the glyph - a 1px hit target cannot
+      // be tapped on a phone. Circle, not the default pin: a pin's body sits
+      // above its anchor, which dragged the glyphs off the price line.
+      symbol: "circle",
       symbolSize: 18,
       itemStyle: { color: "rgba(0,0,0,0)" },
       label: { color: COLOURS[mark.role] || COLOURS.accent, fontSize: 14 },
