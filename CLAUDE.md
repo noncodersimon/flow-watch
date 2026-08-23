@@ -71,6 +71,8 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   copy, commit messages, everything.
 - Front end: vanilla JS + ECharts from CDN. Bump APP_VERSION in app.js on
   every front-end change (visible in footer - used to confirm deploys).
+  Routes: #/ is the default instrument chart, #/i/<id> a chosen one,
+  #/screener the table.
 - Palette: navy #1F3864, blue #2E5A9C, up #1a7f4b, down #c0392b.
 - Deliver complete working files, not fragments. Mobile-first - check iPhone
   Safari rendering for UI changes.
@@ -154,6 +156,15 @@ common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
 ## Current state (Aug 2026, v0.3)
+
+History is thin: every series holds exactly 100 daily points (2026-03-31
+onward) because the only fetch run so far was a manual one on 2026-08-22
+against the pre-rotation adapter, which asked for "compact". The current
+adapter asks for "full" whenever an instrument has under 150 points, and
+Alpha Vantage does serve full history on the free tier (IBM returns 6,742
+points back to 1999), so the next run backfills to the MAX_POINTS cap of
+2600, about 10 years. The cron is Mon-Sat, so a Sunday change waits for
+Monday.
 
 Live: volume/price/ratio (Alpha Vantage), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
@@ -287,3 +298,21 @@ count. Form 4 gives exact share counts and prices, so those go into the
 detail string and nothing is lost - "Open-market sale 50,000 shares at
 $311.02". The UI counts events rather than summing money, so nothing
 downstream needs the figure.
+
+### 2026-08-23 - The front screen is a chart, not the screener
+The site used to open on the screener table. It now opens on a default
+instrument (VUKE.LON, a FTSE 100 tracker - the broadest single line for a
+UK lens) with a region > sector > instrument picker above the chart, and
+the table moved to #/screener. Rationale: the table answers "what is
+unusual today" but it is a poor first impression on a phone, where seven
+columns do not fit and most cells read "-" until every adapter has run.
+A chart answers "what is this doing" immediately. The screener is one tap
+away and unchanged. The picker is built from meta.json, so adding an
+instrument there puts it in the menu with no UI edit.
+
+### 2026-08-23 - A 1D range is not possible on daily bars, so there is no button
+1W was added and 1D deliberately was not. Every source here is daily: a
+one-day range is a single close, which draws nothing. 1W is about five
+points - sparse but real. A genuine intraday range needs tick data, which
+is phase 2; add the button then, not before, because a range button that
+renders an empty chart reads as a bug.

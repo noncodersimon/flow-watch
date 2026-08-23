@@ -32,6 +32,13 @@ window still build a full series over time.
 4. Actions tab → "Fetch market data" → Run workflow (first run seeds the data).
 5. The site appears at `https://<user>.github.io/<repo>/`.
 
+## Using it
+
+The site opens on a default instrument chart (a FTSE 100 tracker). Use the
+picker above the chart to browse by region, then sector, then instrument, or
+follow "All instruments and screener" for the sortable table. Ranges are 1W to
+Max; there is no 1D because the sources are daily bars.
+
 ## Constraints worth knowing
 
 - Alpha Vantage free tier allows ~25 requests/day. The volume adapter rotates

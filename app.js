@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.5";
+const APP_VERSION = "0.6";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -18,6 +18,10 @@ const EVENT_MARKS = {
   tr1_down:   { glyph: "▼", color: "#2E5A9C", label: "Major holding decreased" },
 };
 const DIRECTIONAL_KINDS = ["pdmr_buy", "pdmr_sell", "tr1_up", "tr1_down"];
+
+/* What the site opens on. A FTSE 100 tracker is the broadest single line for
+   a UK lens; falls back to the first instrument if it ever leaves meta.json. */
+const DEFAULT_INSTRUMENT = "VUKE.LON";
 
 const state = {
   meta: null,
@@ -146,6 +150,11 @@ function screenerRows() {
   }));
 }
 
+function defaultInstrumentId() {
+  const has = (id) => state.meta.instruments.some((i) => i.id === id);
+  return has(DEFAULT_INSTRUMENT) ? DEFAULT_INSTRUMENT : state.meta.instruments[0].id;
+}
+
 function renderScreener() {
   const rows = screenerRows();
   const { key, dir } = state.sort;
@@ -206,9 +215,56 @@ function renderScreener() {
   );
 }
 
+/* ---------- instrument picker ---------- */
+
+/* region -> sector -> instrument, straight off meta.json, which is the single
+   source of truth for the hierarchy. <details> gives the accordion with no
+   library and no JS, and keyboard support comes free. */
+function groupInstruments() {
+  const byRegion = new Map();
+  for (const inst of state.meta.instruments) {
+    if (!byRegion.has(inst.region)) byRegion.set(inst.region, new Map());
+    const sectors = byRegion.get(inst.region);
+    if (!sectors.has(inst.sector)) sectors.set(inst.sector, []);
+    sectors.get(inst.sector).push(inst);
+  }
+  return byRegion;
+}
+
+function pickerTree(currentId) {
+  const byRegion = groupInstruments();
+  const regions = state.meta.regions.filter((r) => byRegion.has(r));
+  for (const r of byRegion.keys()) if (!regions.includes(r)) regions.push(r);
+
+  return regions.map((region) => {
+    const sectors = byRegion.get(region);
+    const all = [...sectors.values()].flat();
+    const holdsCurrent = all.some((i) => i.id === currentId);
+    const body = [...sectors.keys()].sort().map((sector) => `
+        <div class="pick-sector">
+          <div class="pick-sector-name">${sector}</div>
+          ${sectors.get(sector).map((i) => `
+            <a class="pick-item${i.id === currentId ? " current" : ""}"
+               href="#/i/${encodeURIComponent(i.id)}">
+              <span class="pick-name">${i.name}</span>
+              <span class="pick-type">${i.type}</span>
+            </a>`).join("")}
+        </div>`).join("");
+    return `
+      <details class="pick-region"${holdsCurrent ? " open" : ""}>
+        <summary>${region} <span class="pick-count">${all.length}</span></summary>
+        ${body}
+      </details>`;
+  }).join("");
+}
+
 /* ---------- detail view ---------- */
 
-const RANGES = { "1M": 31, "6M": 183, "1Y": 366, "5Y": 1830, "Max": 99999 };
+/* Sources are daily bars, so a week is about five points - real, but sparse.
+   There is deliberately no 1D: one daily close is a single point, and an
+   intraday range needs tick data (phase 2). */
+const RANGES = { "1W": 7, "1M": 31, "6M": 183, "1Y": 366, "5Y": 1830, "Max": 99999 };
+const DEFAULT_RANGE = "1Y";
 
 function renderDetail(id) {
   const inst = state.meta.instruments.find((i) => i.id === id);
@@ -216,11 +272,17 @@ function renderDetail(id) {
 
   document.getElementById("app").innerHTML = `
     <div class="detail">
-      <a class="back" href="#/">&larr; Back to screener</a>
-      <h2>${inst.name}</h2>
+      <a class="back" href="#/screener">All instruments and screener &rarr;</a>
+      <details class="picker" id="picker">
+        <summary>
+          <span class="picker-current">${inst.name}</span>
+          <span class="picker-hint">change</span>
+        </summary>
+        <div class="picker-body">${pickerTree(inst.id)}</div>
+      </details>
       <div class="meta-line">${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
-        `<button data-r="${r}" class="${r === "1Y" ? "active" : ""}">${r}</button>`).join("")}
+        `<button data-r="${r}" class="${r === DEFAULT_RANGE ? "active" : ""}">${r}</button>`).join("")}
       </div>
       <div id="chart"></div>
       <p class="panel-note">${inst.type === "commodity"
@@ -233,7 +295,7 @@ function renderDetail(id) {
   const chartEl = document.getElementById("chart");
   if (inst.type === "etf" && series("etf_flow", inst.id).length) chartEl.style.height = "540px";
   state.chart = echarts.init(chartEl);
-  drawChart(inst, "1Y");
+  drawChart(inst, DEFAULT_RANGE);
 
   document.querySelectorAll(".ranges button").forEach((b) =>
     b.addEventListener("click", () => {
@@ -381,7 +443,7 @@ function renderRegions() {
       state.region = b.textContent;
       localStorage.setItem("mf-region", state.region);
       renderRegions();
-      if (!location.hash.startsWith("#/i/")) renderScreener();
+      if (location.hash.startsWith("#/screener")) renderScreener();
     })
   );
 }
@@ -389,8 +451,13 @@ function renderRegions() {
 function route() {
   if (state.chart) { state.chart.dispose(); state.chart = null; }
   const h = location.hash;
-  if (h.startsWith("#/i/")) renderDetail(decodeURIComponent(h.slice(4)));
-  else renderScreener();
+  const onScreener = h.startsWith("#/screener");
+  // the region filter belongs to the screener; on a chart the picker does that
+  document.getElementById("regions").style.display = onScreener ? "" : "none";
+  if (onScreener) renderScreener();
+  else if (h.startsWith("#/i/")) renderDetail(decodeURIComponent(h.slice(4)));
+  else renderDetail(defaultInstrumentId());
+  window.scrollTo(0, 0);
 }
 
 (async function init() {
