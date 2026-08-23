@@ -1,6 +1,10 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "1.0";
+/* Bumped on every front-end change. index.html appends it to the app.js and
+   style.css URLs, so a returning browser cannot serve a stale script against
+   fresh data - there is no build step here to fingerprint assets for us.
+   tests/test_data_store.py enforces that the two stay in step. */
+const APP_VERSION = "1.1";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a

@@ -280,6 +280,39 @@ class EventStoreTest(unittest.TestCase):
                     self.assertIn(ev.get("kind"), EVENT_KINDS)
 
 
+class CacheBustingTest(unittest.TestCase):
+    """There is no build step to fingerprint assets, so index.html carries the
+    app version on the asset URLs by hand. If the two drift, a returning
+    browser serves a stale app.js against fresh data and the footer version
+    silently disagrees with what is deployed - which is exactly how a shipped
+    feature looks missing."""
+
+    @classmethod
+    def setUpClass(cls):
+        with open(os.path.join(REPO_ROOT, "app.js"), encoding="utf-8") as f:
+            cls.app = f.read()
+        with open(os.path.join(REPO_ROOT, "index.html"), encoding="utf-8") as f:
+            cls.html = f.read()
+
+    def version(self):
+        m = re.search(r'const APP_VERSION\s*=\s*"([^"]+)"', self.app)
+        self.assertIsNotNone(m, "APP_VERSION not found in app.js")
+        return m.group(1)
+
+    def test_assets_carry_the_app_version(self):
+        version = self.version()
+        for asset in ("app.js", "style.css"):
+            with self.subTest(asset=asset):
+                self.assertIn(f"{asset}?v={version}", self.html,
+                              f"index.html must load {asset}?v={version}")
+
+    def test_no_asset_is_loaded_unversioned(self):
+        for asset in ("app.js", "style.css"):
+            with self.subTest(asset=asset):
+                self.assertNotRegex(self.html, rf'"{re.escape(asset)}"',
+                                    f"{asset} is loaded without a version query")
+
+
 class SummaryTest(unittest.TestCase):
     """summary.json is the only file the screener loads, so if it drifts from
     the instrument documents the table silently shows stale numbers."""

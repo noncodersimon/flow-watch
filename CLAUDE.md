@@ -80,7 +80,11 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 - UK English. Short hyphens or " - ", never em dashes - in code comments, UI
   copy, commit messages, everything.
 - Front end: vanilla JS + ECharts from CDN. Bump APP_VERSION in app.js on
-  every front-end change (visible in footer - used to confirm deploys).
+  every front-end change AND in the ?v= query on app.js and style.css in
+  index.html - a test enforces they match. The query is the cache-buster:
+  with no build step nothing fingerprints assets, so without it a returning
+  browser runs stale JS against fresh data and a shipped feature looks
+  missing (visible in footer - used to confirm deploys).
   Routes: #/ is the default instrument chart, #/i/<id> a chosen one,
   #/screener the table. Chart overlays live in OVERLAYS in app.js and are
   remembered per browser; all are derived client-side except the benchmark,
