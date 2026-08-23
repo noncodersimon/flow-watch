@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -81,9 +81,14 @@ async function loadAll() {
 
 async function loadInstrument(id) {
   if (!state.docs[id]) {
-    state.docs[id] =
-      (await loadJSON(`data/instruments/${encodeURIComponent(id)}.json`)) ||
-      { id, metrics: {}, events: [] };
+    const doc = await loadJSON(`data/instruments/${encodeURIComponent(id)}.json`);
+    if (!doc) {
+      // Deliberately NOT cached. Caching this empty fallback made one flaky
+      // fetch look like an instrument with no data for the whole session -
+      // leaving navigates as the retry.
+      return { id, metrics: {}, events: [], failed: true };
+    }
+    state.docs[id] = doc;
   }
   return state.docs[id];
 }
@@ -222,6 +227,72 @@ function wireStrip() {
   });
 }
 
+/* ---------- insider event details ----------
+
+   Tapping a marker shows what it is: every event on that date, with who,
+   what and how much, and a link to the source announcement. The card sits
+   under the chart rather than floating - a popover following a tap point
+   is exactly the clutter the quiet tooltip avoided. */
+
+function fmtEventValue(ev) {
+  if (ev.value_gbp != null) {
+    return "£" + ev.value_gbp.toLocaleString("en-GB", { maximumFractionDigits: 0 });
+  }
+  return null;  // dollar and euro dealings carry their numbers in the detail text
+}
+
+function showEventCard(inst, date) {
+  const card = document.getElementById("event-card");
+  if (!card) return;
+  const events = instrumentEvents(inst.id).filter((e) => e.date === date);
+  if (!events.length) return;
+  card.innerHTML = `
+    <div class="event-card-head">
+      <strong>${date}</strong>
+      <button class="event-card-close" aria-label="Close">&times;</button>
+    </div>
+    ${events.map((e) => {
+      const mark = EVENT_MARKS[e.kind] || { glyph: "●", role: "accent", label: e.kind };
+      const value = fmtEventValue(e);
+      return `
+      <div class="event-row">
+        <span class="event-glyph" style="color:${COLOURS[mark.role] || COLOURS.accent}">${mark.glyph}</span>
+        <div class="event-body">
+          <div><strong>${mark.label}</strong>${value ? ` · ${value}` : ""}</div>
+          <div class="event-who">${e.who || ""}${e.role ? ` · ${e.role}` : ""}</div>
+          ${e.detail ? `<div class="event-detail">${e.detail}</div>` : ""}
+          ${e.url ? `<a class="event-src" href="${e.url}" target="_blank" rel="noopener">Source announcement &nearr;</a>` : ""}
+        </div>
+      </div>`;
+    }).join("")}`;
+  card.hidden = false;
+  card.querySelector(".event-card-close").addEventListener("click", () => { card.hidden = true; });
+}
+
+let markPointClickedAt = 0;
+
+function attachMarkerClicks(chart, inst) {
+  chart.on("click", (params) => {
+    if (params.componentType !== "markPoint" || !params.data || !params.data.date) return;
+    markPointClickedAt = Date.now();
+    showEventCard(inst, params.data.date);
+  });
+}
+
+/* The key: which glyph means what, built from the kinds actually on the
+   chart, so it never lists a marker that is not there. */
+function renderMarkerKey(evs) {
+  const el = document.getElementById("marker-key");
+  if (!el) return;
+  const kinds = [...new Set(evs.map((e) => e.kind))].filter((k) => EVENT_MARKS[k]);
+  if (!kinds.length) { el.hidden = true; el.innerHTML = ""; return; }
+  el.hidden = false;
+  el.innerHTML = kinds.map((k) => {
+    const m = EVENT_MARKS[k];
+    return `<span class="key-item"><span style="color:${COLOURS[m.role] || COLOURS.accent}">${m.glyph}</span> ${m.label}</span>`;
+  }).join("") + `<span class="key-item key-hint">tap a marker for details</span>`;
+}
+
 /* Simple moving average over [[date, value], ...].
 
    Points before the window is full are null rather than a partial average,
@@ -267,7 +338,12 @@ function attachTooltipToggle(chart) {
     const inside = grids.some((_, i) =>
       chart.containPixel({ gridIndex: i }, [e.offsetX, e.offsetY]));
     if (!inside) return;
-    tooltipDetail = !tooltipDetail;
+    // defer so a tap on an event marker opens its card without also
+    // flipping the tooltip mode underneath it
+    setTimeout(() => {
+      if (Date.now() - markPointClickedAt < 150) return;
+      tooltipDetail = !tooltipDetail;
+    }, 0);
   });
 }
 
@@ -500,7 +576,7 @@ const DEFAULT_RANGE = "1Y";
 async function renderDetail(id, token) {
   const inst = state.meta.instruments.find((i) => i.id === id);
   if (!inst) { location.hash = "#/"; return; }
-  await loadInstrument(id);
+  const doc = await loadInstrument(id);
   if (state.overlays.bench) {
     const benchId = benchmarkFor(inst);
     if (benchId) await loadInstrument(benchId);
@@ -518,7 +594,12 @@ async function renderDetail(id, token) {
         `<button data-o="${o.key}" aria-pressed="${state.overlays[o.key] ? "true" : "false"}"
                  class="${state.overlays[o.key] ? "active" : ""}">${o.label}</button>`).join("")}
       </div>
+      ${doc.failed ? `<p class="empty">This instrument's data did not load - likely a
+        connection hiccup rather than missing data. Pick another instrument and
+        come back to retry.</p>` : ""}
       <div id="chart"></div>
+      <p class="marker-key" id="marker-key" hidden></p>
+      <div class="event-card" id="event-card" hidden></div>
       ${stripMarkup(inst.id)}
       <p class="panel-note">${inst.type === "commodity"
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
@@ -534,6 +615,7 @@ async function renderDetail(id, token) {
   const chartEl = document.getElementById("chart");
   state.chart = echarts.init(chartEl);
   attachTooltipToggle(state.chart);
+  attachMarkerClicks(state.chart, inst);
   drawChart(inst, DEFAULT_RANGE);
 
   let currentRange = DEFAULT_RANGE;
@@ -626,8 +708,13 @@ function drawChart(inst, rangeKey) {
     return {
       coord: [e.date, price[dates.indexOf(e.date)][1]],
       value: mark.glyph,
-      itemStyle: { color: COLOURS[mark.role] || COLOURS.accent },
+      // an invisible 18px symbol behind the glyph - a 1px hit target cannot
+      // be tapped on a phone; the glyph itself is the label
+      symbolSize: 18,
+      itemStyle: { color: "rgba(0,0,0,0)" },
+      label: { color: COLOURS[mark.role] || COLOURS.accent, fontSize: 14 },
       name: mark.label,
+      date: e.date,
     };
   });
 
@@ -784,6 +871,8 @@ function drawChart(inst, rangeKey) {
   // Only the price panel's overlays need naming - the lower panels each carry
   // their own axis label, and a scrolling legend that shows two of five names
   // is worse than no legend at all.
+  renderMarkerKey(evs);
+
   const lineNames = panels[0].series
     .filter((sr) => sr.type === "line" && sr.name !== "Price")
     .map((sr) => sr.name);

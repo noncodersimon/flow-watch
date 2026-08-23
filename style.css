@@ -274,6 +274,59 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
 .strip-item.current { border-color: var(--accent); background: var(--tint); }
 .strip-name { max-width: 11em; overflow: hidden; text-overflow: ellipsis; }
 
+/* marker key + tapped-event card, under the chart */
+.marker-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+}
+.key-item { white-space: nowrap; }
+.key-hint { font-style: italic; }
+
+.event-card {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.6rem;
+}
+.event-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  margin-bottom: 0.3rem;
+}
+.event-card-close {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+.event-card-close:hover { color: var(--accent); }
+.event-row {
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.event-glyph { flex: none; font-size: 1rem; }
+.event-who { color: var(--text-muted); font-size: 0.82rem; }
+.event-detail { color: var(--text-muted); font-size: 0.82rem; margin-top: 0.15rem; }
+.event-src {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .panel-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.7rem; }
 
 footer {
