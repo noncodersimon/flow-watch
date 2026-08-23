@@ -207,6 +207,11 @@ def build_summary():
                 row[metric] = points[-1][1]
                 if metric == "price":
                     row["date"] = points[-1][0]
+                if metric == "volume_ratio" and len(points) >= 2:
+                    # the week view: the same ratio averaged over the last
+                    # five sessions, so one quiet Friday cannot hide a busy week
+                    week = [v for _, v in points[-5:]]
+                    row["volume_ratio_week"] = round(sum(week) / len(week), 3)
         counts = {}
         for ev in doc["events"]:
             if (ev.get("date") or "") >= cutoff:

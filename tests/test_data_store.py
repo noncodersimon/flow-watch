@@ -378,6 +378,12 @@ class SummaryTest(unittest.TestCase):
                     self.assertEqual(row[metric], points[-1][1],
                                      "summary is stale against the series")
 
+    def test_weekly_ratio_is_sane_where_present(self):
+        for iid, row in self.summary["instruments"].items():
+            if "volume_ratio_week" in row:
+                with self.subTest(instrument=iid):
+                    self.assertGreaterEqual(row["volume_ratio_week"], 0.0)
+
     def test_event_counts_use_known_kinds(self):
         for iid, row in self.summary["instruments"].items():
             for kind in row.get("events30", {}):

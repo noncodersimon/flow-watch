@@ -134,6 +134,40 @@ class UnitChangeGuardTest(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_DEPS, "yfinance/pandas not installed")
 @unittest.skipUnless(HAVE_DEPS, "yfinance/pandas not installed")
+class RatioPointsTest(unittest.TestCase):
+    """Yahoo serves missing volume history as zeros. SSLN has one real day in
+    March 2023 and then nothing until spring 2026; folding that false quiet
+    into the 20-day average inflated its first real ratios to 20x."""
+
+    def days(self, values, start=1):
+        return [[f"2026-01-{i:02d}", float(v)] for i, v in enumerate(values, start)]
+
+    def test_steady_volume_ratios_near_one(self):
+        out = pv.ratio_points(self.days([100] * 30))
+        self.assertEqual(out[-1][1], 1.0)
+
+    def test_long_zero_gap_is_removed_not_averaged(self):
+        points = self.days([100]) + self.days([0] * 40, start=2) + self.days([100] * 5, start=42)
+        out = pv.ratio_points(points)
+        # without gap removal the first post-gap ratio is ~20x; with it, the
+        # average is built from real observations and stays near 1
+        self.assertLessEqual(max(v for _, v in out), 2.0)
+
+    def test_short_zero_runs_are_genuine_quiet_days(self):
+        points = self.days([100, 100, 0, 0, 100, 100])
+        dates = [d for d, _ in pv.ratio_points(points)]
+        self.assertIn("2026-01-03", dates)  # the quiet day is in the series
+
+    def test_leading_zeros_are_dropped(self):
+        out = pv.ratio_points(self.days([0, 0, 0, 100, 100]))
+        self.assertEqual(out[0][0], "2026-01-04")
+
+    def test_all_zero_series_is_empty(self):
+        self.assertEqual(pv.ratio_points(self.days([0] * 10)), [])
+        self.assertEqual(pv.ratio_points([]), [])
+
+
+@unittest.skipUnless(HAVE_DEPS, "yfinance/pandas not installed")
 class CurrencyVerificationTest(unittest.TestCase):
     """Yahoo reports pence as "GBp". A new instrument's meta.json label is
     checked against that before its first points merge - the one moment a

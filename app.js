@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -163,33 +163,63 @@ function defaultInstrumentId() {
 }
 
 const STRIP_SIZE = 5;
+const EXPANDED_SIZE = 20;
 
-function unusualToday() {
-  const rows = Object.entries(state.summary.instruments || {})
+function rankedByRatio(field, n) {
+  return Object.entries(state.summary.instruments || {})
     .map(([id, row]) => ({
       inst: state.meta.instruments.find((i) => i.id === id),
-      ratio: row.volume_ratio ?? null,
-      insider: DIRECTIONAL_KINDS.reduce((n, k) => n + ((row.events30 || {})[k] || 0), 0),
+      ratio: row[field] ?? null,
+      insider: DIRECTIONAL_KINDS.reduce((sum, k) => sum + ((row.events30 || {})[k] || 0), 0),
     }))
     .filter((r) => r.inst && r.ratio != null)
-    .sort((x, y) => y.ratio - x.ratio);
-  return rows.slice(0, STRIP_SIZE);
+    .sort((x, y) => y.ratio - x.ratio)
+    .slice(0, n);
+}
+
+function stripItems(rows, currentId) {
+  return rows.map((r) => `
+      <a class="strip-item${r.inst.id === currentId ? " current" : ""}"
+         href="#/i/${encodeURIComponent(r.inst.id)}">
+        <span class="strip-name">${r.inst.name}</span>
+        ${ratioBadge(r.ratio)}
+        ${r.insider ? `<span class="badge cool" title="Open-market insider dealings, last 30 days">${r.insider}&#9650;</span>` : ""}
+      </a>`).join("");
 }
 
 function stripMarkup(currentId) {
-  const rows = unusualToday();
-  if (rows.length < 2) return "";
+  const today = rankedByRatio("volume_ratio", STRIP_SIZE);
+  if (today.length < 2) return "";
   return `
     <div class="strip">
-      <span class="strip-title" title="Volume vs own 20-day average, from the latest run. Activity, not net buying.">Unusual today</span>
-      ${rows.map((r) => `
-        <a class="strip-item${r.inst.id === currentId ? " current" : ""}"
-           href="#/i/${encodeURIComponent(r.inst.id)}">
-          <span class="strip-name">${r.inst.name}</span>
-          ${ratioBadge(r.ratio)}
-          ${r.insider ? `<span class="badge cool" title="Open-market insider dealings, last 30 days">${r.insider}&#9650;</span>` : ""}
-        </a>`).join("")}
+      <button class="strip-toggle" id="strip-toggle" aria-expanded="false"
+              title="Volume vs own 20-day average. Activity, not net buying.">
+        Unusual today <span class="strip-chevron" aria-hidden="true">&#9662;</span>
+      </button>
+      ${stripItems(today, currentId)}
+    </div>
+    <div class="strip-expanded" id="strip-expanded" hidden>
+      <div class="strip-section">
+        <h3>Top ${EXPANDED_SIZE} today</h3>
+        <div class="strip-grid">${stripItems(rankedByRatio("volume_ratio", EXPANDED_SIZE), currentId)}</div>
+      </div>
+      <div class="strip-section">
+        <h3>Top ${EXPANDED_SIZE} this week
+          <span class="strip-note">volume vs 20-day average, averaged over the last 5 sessions</span></h3>
+        <div class="strip-grid">${stripItems(rankedByRatio("volume_ratio_week", EXPANDED_SIZE), currentId)}</div>
+      </div>
     </div>`;
+}
+
+function wireStrip() {
+  const toggle = document.getElementById("strip-toggle");
+  const panel = document.getElementById("strip-expanded");
+  if (!toggle || !panel) return;
+  toggle.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    toggle.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
+    toggle.classList.toggle("open", !panel.hidden);
+  });
 }
 
 /* Simple moving average over [[date, value], ...].
@@ -499,6 +529,7 @@ async function renderDetail(id, token) {
     </div>`;
 
   wirePicker();
+  wireStrip();
 
   const chartEl = document.getElementById("chart");
   state.chart = echarts.init(chartEl);

@@ -59,6 +59,9 @@ sources are daily bars.
   against Investegate for the 100 UK names.
 - A new instrument's currency label is verified against Yahoo before its
   first points merge; mismatches land in data/health.json and fail CI.
+- Yahoo's volume history for some LSE lines has multi-year holes served as
+  zeros (SSLN has none before spring 2026). Zero-runs of 30+ days are
+  treated as data gaps when computing volume_ratio, not as quiet trading.
 - CFTC COT data is weekly (published Fridays, data as of Tuesday).
 - LSE prices are in pence (GBX) from Yahoo, as they were from Alpha Vantage.
   A 20x jump in an instrument's last close is treated as a change of units and

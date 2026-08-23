@@ -595,3 +595,29 @@ metadata-only quirk, but the lesson recorded here is the opposite one:
 when metadata and served data agree with each other and disagree with your
 prior, the source is telling the truth. Both instruments' stored series are
 coherent (a single currency throughout), so nothing needs re-seeding.
+
+### 2026-08-23 - Yahoo's LSE volume history has holes, and zeros there are not quiet days
+Simon spotted SSLN's volume bars stopping about four months back. The
+price history is complete; the volume history is Yahoo's gap - one real
+day in March 2023, then nothing until spring 2026, served as zeros. SGLN
+alongside has full coverage, so it is per-line, not systematic. The chart
+drawing nothing for the missing years is honest and stays.
+
+What was ours to fix was the ratio: folding years of placeholder zeros
+into the 20-day average understated it and inflated SSLN's first real
+ratios to exactly 20x. ratio_points in price_volume_yahoo.py now removes
+any run of 30 or more consecutive zero-volume days as a data gap wherever
+it falls, keeps shorter runs as the genuine quiet days they are on thin
+lines, and drops leading zeros outright. SSLN's series max fell from 20.0
+to its real 2.99 spike. Stored ratios were recomputed locally (the
+recompute is pure) rather than waiting a run.
+
+### 2026-08-23 - The strip expands to top 20 today and top 20 this week
+Tapping the "Unusual today" label opens a panel with two ranked lists of
+20: today, and the week - the same ratio averaged over the last five
+sessions, so one quiet Friday cannot hide a busy week. The weekly figure
+is computed by build_summary.py into summary.json (volume_ratio_week)
+rather than in the browser, because the browser only holds summary.json
+on the front screen and computing it there would mean fetching every
+instrument document. Collapsed by default: five pills answer the everyday
+question, twenty are there when asked.

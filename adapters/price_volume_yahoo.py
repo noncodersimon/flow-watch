@@ -142,6 +142,43 @@ def fetch_frame(symbols, period=HISTORY_PERIOD):
     )
 
 
+VOLUME_GAP_DAYS = 30  # a zero-run at least this long is missing data, not quiet trading
+
+
+def ratio_points(points):
+    """volume_ratio series from a volume series: value / own 20-day average.
+
+    Yahoo carries no volume history at all for some LSE ETC lines - SSLN has
+    a single real day in March 2023 and then nothing until spring 2026 - and
+    serves the missing stretch as zeros. Folding those into the average
+    understates it and inflates the first real ratios by up to 20x, so any
+    run of VOLUME_GAP_DAYS or more consecutive zeros is treated as a data
+    gap and removed before the rolling average, wherever it falls. Short
+    zero runs are kept: a thin line's quiet day is a genuine observation.
+    Leading zeros are dropped outright - there is nothing to average before
+    the first trade.
+    """
+    live = []
+    zero_run = []
+    for point in points:
+        if point[1] > 0:
+            if len(zero_run) < VOLUME_GAP_DAYS and live:
+                live.extend(zero_run)
+            zero_run = []
+            live.append(point)
+        else:
+            zero_run.append(point)
+    # a trailing zero-run shorter than a gap is recent quiet days, keep it
+    if live and len(zero_run) < VOLUME_GAP_DAYS:
+        live.extend(zero_run)
+    if not live:
+        return []
+    dates = [p[0] for p in live]
+    vols = [p[1] for p in live]
+    avg20 = rolling_mean(vols, 20)
+    return [[d, round(v / a, 3)] for d, v, a in zip(dates, vols, avg20) if a > 0]
+
+
 def chunks(items, size):
     for i in range(0, len(items), size):
         yield items[i:i + size]
@@ -223,12 +260,7 @@ def main():
     # recompute the ratio over the full merged history, so a partial run does
     # not leave stale averages behind
     for sym, points in volume_store["series"].items():
-        dates = [p[0] for p in points]
-        vols = [p[1] for p in points]
-        avg20 = rolling_mean(vols, 20)
-        ratio_store["series"][sym] = [
-            [d, round(v / a, 3)] for d, v, a in zip(dates, vols, avg20) if a > 0
-        ]
+        ratio_store["series"][sym] = ratio_points(points)
 
     save_store("price", price_store)
     save_store("volume", volume_store)
