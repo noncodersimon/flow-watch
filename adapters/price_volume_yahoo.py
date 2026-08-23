@@ -184,13 +184,26 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     reported, e_note = None, e
                 verdict = currency_matches(inst.get("currency"), reported)
-                if verdict is False:
+                if verdict is False and inst.get("trust_currency"):
+                    # Yahoo's metadata is sometimes wrong about its own lines -
+                    # fast_info says USD for CPG.L and IHG.L while Yahoo's own
+                    # quote pages show pence. trust_currency marks a label a
+                    # human has verified against the quote page, so it seeds
+                    # on the meta.json label and only logs the disagreement.
+                    print(f"  {inst['id']} ({symbol}): Yahoo metadata says "
+                          f"{reported} but the label is human-verified "
+                          f"({inst.get('currency')}) - seeding on meta.json",
+                          file=sys.stderr)
+                elif verdict is False:
                     print(f"  {inst['id']} ({symbol}): meta.json says "
                           f"{inst.get('currency')} but Yahoo trades it in "
                           f"{reported} - refusing to seed until meta.json is "
                           f"corrected", file=sys.stderr)
+                    # last_close makes the fix self-evident from health.json:
+                    # 2456.0 is plainly pence, 33.1 plainly dollars
                     mismatches.append({"id": inst["id"], "meta": inst.get("currency"),
-                                       "yahoo": reported})
+                                       "yahoo": reported,
+                                       "last_close": closes[-1][1]})
                     continue
                 if verdict is None:
                     print(f"  {inst['id']} ({symbol}): currency could not be "

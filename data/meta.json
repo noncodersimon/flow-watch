@@ -300,7 +300,8 @@
       "type": "equity",
       "region": "UK",
       "sector": "Industrials",
-      "currency": "GBX"
+      "currency": "GBX",
+      "trust_currency": true
     },
     {
       "id": "CCC.LON",
@@ -460,7 +461,8 @@
       "type": "equity",
       "region": "UK",
       "sector": "Consumer Discretionary",
-      "currency": "GBX"
+      "currency": "GBX",
+      "trust_currency": true
     },
     {
       "id": "IMI.LON",
@@ -1855,7 +1857,7 @@
       "type": "etf",
       "region": "UK",
       "sector": "Gilts",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "IGLT.L"
     },
     {
@@ -1864,7 +1866,7 @@
       "type": "etf",
       "region": "UK",
       "sector": "Gilts",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "INXG.L"
     },
     {
@@ -1873,7 +1875,7 @@
       "type": "etf",
       "region": "UK",
       "sector": "Corporate Bonds",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "SLXX.L"
     },
     {
@@ -1891,7 +1893,7 @@
       "type": "etf",
       "region": "US",
       "sector": "US Equity",
-      "currency": "GBP",
+      "currency": "GBX",
       "yahoo": "CSP1.L"
     },
     {
@@ -1909,7 +1911,7 @@
       "type": "etf",
       "region": "US",
       "sector": "US Tech",
-      "currency": "GBP",
+      "currency": "GBX",
       "yahoo": "EQQQ.L"
     },
     {
@@ -1918,7 +1920,7 @@
       "type": "etf",
       "region": "US",
       "sector": "Treasuries",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "IBTS.L"
     },
     {
@@ -1927,7 +1929,7 @@
       "type": "etf",
       "region": "US",
       "sector": "Treasuries",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "IBTM.L"
     },
     {
@@ -1936,7 +1938,7 @@
       "type": "etf",
       "region": "US",
       "sector": "Treasuries",
-      "currency": "GBX",
+      "currency": "USD",
       "yahoo": "IDTL.L"
     },
     {
@@ -1945,7 +1947,7 @@
       "type": "etf",
       "region": "US",
       "sector": "Treasuries",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "ITPS.L"
     },
     {
@@ -2062,7 +2064,7 @@
       "type": "etf",
       "region": "Asia",
       "sector": "Country Equity",
-      "currency": "USD",
+      "currency": "GBX",
       "yahoo": "ITWN.L"
     },
     {
@@ -2071,7 +2073,7 @@
       "type": "etf",
       "region": "Emerging Markets",
       "sector": "Emerging Equity",
-      "currency": "USD",
+      "currency": "GBX",
       "yahoo": "IBZL.L"
     },
     {
@@ -2080,7 +2082,7 @@
       "type": "etf",
       "region": "Emerging Markets",
       "sector": "Emerging Equity",
-      "currency": "USD",
+      "currency": "GBX",
       "yahoo": "IEEM.L"
     },
     {
@@ -2098,7 +2100,7 @@
       "type": "etf",
       "region": "Emerging Markets",
       "sector": "EM Bonds",
-      "currency": "USD",
+      "currency": "GBX",
       "yahoo": "SEMB.L"
     },
     {
@@ -2116,7 +2118,7 @@
       "type": "etf",
       "region": "Global",
       "sector": "Global Equity",
-      "currency": "GBP",
+      "currency": "GBX",
       "yahoo": "SWDA.L"
     },
     {
@@ -2260,7 +2262,7 @@
       "type": "etf",
       "region": "Global",
       "sector": "Thematics",
-      "currency": "USD",
+      "currency": "GBP",
       "yahoo": "SMGB.L"
     },
     {
@@ -2314,7 +2316,7 @@
       "type": "etf",
       "region": "Global",
       "sector": "Thematics",
-      "currency": "GBP",
+      "currency": "USD",
       "yahoo": "NATO.L"
     },
     {

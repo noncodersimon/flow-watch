@@ -246,11 +246,16 @@ class SeriesStoreTest(unittest.TestCase):
                     self.assertGreaterEqual(v, 0.0, f"{sid} {d}")
                     self.assertLessEqual(v, 100.0, f"{sid} {d}")
 
-    def test_volume_ratios_are_positive(self):
+    def test_volume_ratios_are_never_negative(self):
+        """Used to assert strictly positive, which assumed every instrument
+        trades every day. Thinly traded LSE ETF lines have genuine
+        zero-volume days - 29 of the 58 funds added on 2026-08-23 have at
+        least one - and a ratio of exactly 0 is the honest record of that.
+        Negative is still impossible."""
         for sid, points in store("volume_ratio")["series"].items():
             with self.subTest(instrument=sid):
                 for d, v in points:
-                    self.assertGreater(v, 0.0, f"{sid} {d} ratio should be > 0")
+                    self.assertGreaterEqual(v, 0.0, f"{sid} {d}")
 
     def test_share_counts_are_positive(self):
         for sid, points in store("etf_shares")["series"].items():
@@ -370,9 +375,14 @@ class SummaryTest(unittest.TestCase):
                 with self.subTest(instrument=iid):
                     self.assertIn(kind, EVENT_KINDS)
 
-    def test_every_instrument_with_data_is_summarised(self):
+    def test_every_instrument_with_metrics_is_summarised(self):
+        """Metrics only, deliberately. An instrument can hold events but no
+        series - Compass Group's first seed was refused by the currency check
+        while its RNS events landed fine - and if all its events are older
+        than the 30-day window there is nothing to summarise. Requiring a row
+        for it would force empty rows into summary.json."""
         for iid, doc in self.docs.items():
-            if doc["metrics"] or doc["events"]:
+            if doc["metrics"]:
                 with self.subTest(instrument=iid):
                     self.assertIn(iid, self.summary["instruments"])
 
