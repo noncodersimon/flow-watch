@@ -33,6 +33,7 @@
   --accent-hover: #1E43B8;
   --on-accent:    #FFFFFF;
   --focus-ring:   var(--cobalt);
+  --input-border: #8A8678;   /* 3.6:1 against a white fill */
   --tint:         #F2F5FD;   /* cobalt at ~8% on white */
   --tint-azure:   #EAF6FD;
   --tint-amber:   #FDF1DF;
@@ -290,14 +291,48 @@ footer a:hover { color: var(--accent); text-decoration: underline; }
   cursor: pointer;
 }
 .pick-count { color: var(--text-muted); font-weight: 400; font-size: 0.78rem; }
-.pick-sector { margin: 0 0 0.45rem 0.5rem; }
-.pick-sector-name {
+/* Sector is its own disclosure, so the tree collapses at two levels. Only the
+   region and sector holding the current instrument start open - with 26
+   instruments an all-open tree is a wall of text on a phone. */
+.pick-sector { margin: 0 0 0.1rem 0.55rem; }
+.pick-sector > summary {
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-muted);
-  margin: 0.45rem 0 0.15rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+.pick-sector > summary:hover { color: var(--accent); }
+
+.pick-search { position: relative; margin: 0.5rem 0 0.4rem; }
+.pick-search-icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.pick-search input {
+  width: 100%;
+  padding: 0.5rem 0.7rem 0.5rem 2.1rem;
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+}
+.pick-search input::placeholder { color: var(--text-muted); }
+.pick-search input:focus { border-color: var(--accent); }
+.pick-empty {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0;
+  padding: 0.5rem 0.2rem;
 }
 .pick-item {
   display: flex;

@@ -1,6 +1,6 @@
 /* Market Flows front end - no build step, reads static JSON from /data */
 
-const APP_VERSION = "0.7";
+const APP_VERSION = "0.8";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -257,23 +257,109 @@ function pickerTree(currentId) {
   return regions.map((region) => {
     const sectors = byRegion.get(region);
     const all = [...sectors.values()].flat();
-    const holdsCurrent = all.some((i) => i.id === currentId);
-    const body = [...sectors.keys()].sort().map((sector) => `
-        <div class="pick-sector">
-          <div class="pick-sector-name">${sector}</div>
-          ${sectors.get(sector).map((i) => `
+    const regionHasCurrent = all.some((i) => i.id === currentId);
+    const body = [...sectors.keys()].sort().map((sector) => {
+      const items = sectors.get(sector);
+      const sectorHasCurrent = items.some((i) => i.id === currentId);
+      return `
+        <details class="pick-sector"${sectorHasCurrent ? " open" : ""}>
+          <summary>${sector} <span class="pick-count">${items.length}</span></summary>
+          ${items.map((i) => `
             <a class="pick-item${i.id === currentId ? " current" : ""}"
-               href="#/i/${encodeURIComponent(i.id)}">
+               href="#/i/${encodeURIComponent(i.id)}"
+               data-search="${searchKey(i)}">
               <span class="pick-name">${i.name}</span>
               <span class="pick-type">${i.type}</span>
             </a>`).join("")}
-        </div>`).join("");
+        </details>`;
+    }).join("");
     return `
-      <details class="pick-region"${holdsCurrent ? " open" : ""}>
+      <details class="pick-region"${regionHasCurrent ? " open" : ""}>
         <summary>${region} <span class="pick-count">${all.length}</span></summary>
         ${body}
       </details>`;
   }).join("");
+}
+
+/* Name, ticker and sector are all worth matching - "vodafone", "vod" and
+   "telecoms" should each find the same line. */
+function searchKey(inst) {
+  return [inst.name, inst.id, inst.sector, inst.type]
+    .join(" ").toLowerCase().replace(/"/g, "");
+}
+
+function pickerMarkup(inst) {
+  return `
+    <details class="picker" id="picker">
+      <summary>
+        <span class="picker-current">${inst.name}</span>
+        <span class="picker-hint">change</span>
+      </summary>
+      <div class="picker-body">
+        <div class="pick-search">
+          <span class="pick-search-icon" aria-hidden="true">&#9906;</span>
+          <input type="search" id="pick-search" autocomplete="off"
+                 placeholder="Search name, ticker or sector"
+                 aria-label="Search instruments">
+        </div>
+        <p class="pick-empty" hidden>No instrument matches that.</p>
+        ${pickerTree(inst.id)}
+      </div>
+    </details>`;
+}
+
+/* Search filters the tree in place: non-matching lines are hidden, and a
+   group is hidden when nothing in it survives. Groups are forced open while
+   searching, because a match buried in a collapsed section reads as no match
+   at all. Clearing the box restores the collapsed-by-default state. */
+function wirePicker() {
+  const picker = document.getElementById("picker");
+  const input = picker && picker.querySelector("#pick-search");
+  if (!input) return;
+
+  const empty = picker.querySelector(".pick-empty");
+  const items = [...picker.querySelectorAll(".pick-item")];
+  const groups = [...picker.querySelectorAll(".pick-sector, .pick-region")];
+  const openByDefault = new Map(groups.map((g) => [g, g.open]));
+
+  const visibleIn = (g) => [...g.querySelectorAll(".pick-item")].some((a) => !a.hidden);
+
+  function apply(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      items.forEach((a) => { a.hidden = false; });
+      groups.forEach((g) => { g.hidden = false; g.open = openByDefault.get(g); });
+      empty.hidden = true;
+      return;
+    }
+    let hits = 0;
+    for (const a of items) {
+      const match = a.dataset.search.includes(q);
+      a.hidden = !match;
+      if (match) hits += 1;
+    }
+    for (const g of groups) {
+      const any = visibleIn(g);
+      g.hidden = !any;
+      g.open = any;
+    }
+    empty.hidden = hits > 0;
+  }
+
+  input.addEventListener("input", () => apply(input.value));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { input.value = ""; apply(""); return; }
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const first = items.find((a) => !a.hidden);
+    if (first) first.click();
+  });
+  // Focus the box when the picker opens, but not on a phone - there the
+  // keyboard would cover the list it is meant to help you read.
+  picker.addEventListener("toggle", () => {
+    if (picker.open && window.matchMedia("(min-width: 641px)").matches) input.focus();
+    if (!picker.open) { input.value = ""; apply(""); }
+  });
 }
 
 /* ---------- detail view ---------- */
@@ -291,13 +377,7 @@ function renderDetail(id) {
   document.getElementById("app").innerHTML = `
     <div class="detail">
       <a class="back" href="#/screener">All instruments and screener &rarr;</a>
-      <details class="picker" id="picker">
-        <summary>
-          <span class="picker-current">${inst.name}</span>
-          <span class="picker-hint">change</span>
-        </summary>
-        <div class="picker-body">${pickerTree(inst.id)}</div>
-      </details>
+      ${pickerMarkup(inst)}
       <div class="meta-line">${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
         `<button data-r="${r}" class="${r === DEFAULT_RANGE ? "active" : ""}">${r}</button>`).join("")}
@@ -309,6 +389,8 @@ function renderDetail(id) {
         ? "Net flow = daily change in shares outstanding x price - actual creation/redemption of units, estimated from Yahoo data. The line is cumulative flow over the selected range."
         : "Volume bars are coloured by the day's price direction - suggestive of pressure, not a true buy/sell split."}</p>
     </div>`;
+
+  wirePicker();
 
   const chartEl = document.getElementById("chart");
   if (inst.type === "etf" && series("etf_flow", inst.id).length) chartEl.style.height = "540px";
