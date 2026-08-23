@@ -3,6 +3,9 @@
   "regions": [
     "UK",
     "US",
+    "Europe",
+    "Asia",
+    "Emerging Markets",
     "Global"
   ],
   "default_region": "UK",
@@ -147,7 +150,7 @@
       "type": "etf",
       "region": "UK",
       "sector": "UK Equity",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "VUKE.L"
     },
     {
@@ -156,7 +159,7 @@
       "type": "etf",
       "region": "Global",
       "sector": "Global Equity",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "VWRL.L"
     },
     {
@@ -165,7 +168,7 @@
       "type": "etf",
       "region": "US",
       "sector": "US Equity",
-      "currency": "GBX",
+      "currency": "GBP",
       "yahoo": "VUSA.L"
     },
     {
@@ -194,6 +197,42 @@
       "sector": "US Tech",
       "currency": "USD",
       "yahoo": "QQQ"
+    },
+    {
+      "id": "VERX.LON",
+      "name": "Vanguard FTSE Dev Europe ex-UK ETF",
+      "type": "etf",
+      "region": "Europe",
+      "sector": "Europe Equity",
+      "currency": "GBP",
+      "yahoo": "VERX.L"
+    },
+    {
+      "id": "VAPX.LON",
+      "name": "Vanguard FTSE Dev Asia Pacific ex-Japan ETF",
+      "type": "etf",
+      "region": "Asia",
+      "sector": "Asia Pacific Equity",
+      "currency": "GBP",
+      "yahoo": "VAPX.L"
+    },
+    {
+      "id": "VJPN.LON",
+      "name": "Vanguard FTSE Japan ETF",
+      "type": "etf",
+      "region": "Asia",
+      "sector": "Japan Equity",
+      "currency": "GBP",
+      "yahoo": "VJPN.L"
+    },
+    {
+      "id": "VFEM.LON",
+      "name": "Vanguard FTSE Emerging Markets ETF",
+      "type": "etf",
+      "region": "Emerging Markets",
+      "sector": "Emerging Equity",
+      "currency": "GBP",
+      "yahoo": "VFEM.L"
     },
     {
       "id": "COT.GOLD",

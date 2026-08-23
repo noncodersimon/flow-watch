@@ -93,11 +93,29 @@ class MetaTest(unittest.TestCase):
                 with self.subTest(instrument=inst["id"]):
                     self.assertTrue(inst.get("yahoo"))
 
-    def test_lse_instruments_are_priced_in_pence(self):
+    def test_currencies_are_ones_the_ui_and_adapters_understand(self):
         # GBX drives the /100 scaling in etf_flows.py and the "p" suffix in
-        # the UI - a .LON instrument in GBP would misprice by 100x
+        # the UI, so an unknown code would silently fall through both.
+        for inst in self.meta["instruments"]:
+            with self.subTest(instrument=inst["id"]):
+                self.assertIn(inst["currency"], {"GBX", "GBP", "USD"})
+
+    def test_lse_lines_are_gbx_or_gbp_not_assumed_pence(self):
+        """This used to assert every .LON instrument was GBX, which was wrong
+        and locked in a real bug: LSE quotes ordinary shares in pence but
+        quotes many ETFs in whole pounds. VUKE at 47 is 47 pounds, not 47
+        pence, and labelling it GBX both printed "47.14p" and would have
+        divided its ETF flow by 100."""
         for inst in self.meta["instruments"]:
             if inst["id"].endswith(".LON"):
+                with self.subTest(instrument=inst["id"]):
+                    self.assertIn(inst["currency"], {"GBX", "GBP"})
+
+    def test_uk_equities_are_still_priced_in_pence(self):
+        # the pence convention does hold for ordinary shares, and that is what
+        # makes BP read 549.50p rather than 549 pounds
+        for inst in self.meta["instruments"]:
+            if inst["id"].endswith(".LON") and inst["type"] == "equity":
                 with self.subTest(instrument=inst["id"]):
                     self.assertEqual(inst["currency"], "GBX")
 

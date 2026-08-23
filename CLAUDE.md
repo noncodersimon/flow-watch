@@ -50,8 +50,11 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
   ones, users.noreply.github.com among them. A bare address is accepted, so
   sec_form4.py normalises SEC_CONTACT to "flow-watch <address>" and falls
   back to a placeholder. Set the repo variable to a real address.
-- LSE instruments quote in pence: currency "GBX" in meta.json, scaled /100
-  where flows are computed in pounds. Preserve this.
+- LSE quotes ordinary shares in pence (GBX) but quotes many ETFs in whole
+  pounds (GBP). Both appear in meta.json and both are correct - do not
+  "tidy" every .LON instrument to GBX. GBX drives the /100 scaling in
+  etf_flows.py and the "p" suffix in the UI, so the label has to match what
+  the exchange actually quotes.
 - Yahoo (yfinance) sometimes rate-limits GitHub runners - ETF flow failures
   are per-instrument and must stay non-fatal.
 - CFTC COT is weekly (Friday publication, Tuesday data).
@@ -390,3 +393,35 @@ latest-value summary. That would make history depth free and let the
 instrument list grow without limit. Worth doing before either goes much
 further; until then five years is the honest compromise, and MAX_POINTS
 stays at 2600 so nothing is thrown away if the period is raised.
+
+### 2026-08-23 - LSE ETFs quote in pounds, and a test had locked in the opposite
+meta.json labelled every .LON instrument GBX, and a test in
+test_data_store.py asserted exactly that, with a comment explaining that a
+.LON instrument in GBP would misprice by 100x. The rule is right for
+ordinary shares and wrong for ETFs: LSE quotes shares in pence but quotes
+most ETFs in whole pounds. VUKE at 47.14 is 47 pounds, not 47 pence - a
+FTSE 100 tracker at 47p is absurd on its face, and the store agreed:
+equities came back as 549.50 for BP and 12240 for AstraZeneca, plainly
+pence, while VUKE, VWRL and VUSA came back around 47, 138 and 107, plainly
+pounds. SGLN at 6552 really is pence and stays GBX.
+
+Two things were wrong as a result: the UI printed "47.14p" for a 47 pound
+ETF, and etf_flows.py would have divided those funds' flows by 100. The
+second had not bitten yet only because etf_flow.json is still empty.
+
+The test was the more interesting half. It did not catch the bug, it
+enforced it - a blanket assertion that encoded an assumption nobody had
+checked against the data. It now asserts what is actually true: currencies
+must be a code the UI and adapters understand, .LON may be GBX or GBP, and
+ordinary shares specifically must be GBX.
+
+### 2026-08-23 - Regions widened to six, populated with LSE-listed ETFs
+Regions are UK, US, Europe, Asia, Emerging Markets and Global. The picker
+and the screener filter both build from meta.json, so this was config
+rather than code. Populated with Vanguard LSE lines - VERX, VAPX, VJPN,
+VFEM - rather than foreign equities, deliberately: informed money only
+covers the UK through RNS and the US through Form 4, so a European or
+Asian equity would carry a permanently blank Insider column and look
+broken where it is merely out of scope. ETFs never had insider data, so
+nothing looks missing. Revisit foreign equities if an insider source that
+covers them ever arrives.
