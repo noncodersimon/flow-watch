@@ -228,6 +228,7 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
 .lp-empty { color: var(--text-muted); margin: 0.3rem 0; }
 .lp-qty {
   width: 7.4rem;
+  min-height: 1.9rem;
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
   padding: 0.2rem 0.4rem;
@@ -235,7 +236,18 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   font-size: 0.8rem;
   background: var(--surface);
   color: var(--text);
+  -webkit-appearance: none;
+  appearance: textfield;
 }
+/* An empty box was invisible on a phone - a hairline border and a dimmed
+   placeholder read as blank space. Empty gets a tint and a dashed border,
+   the "add something here" affordance; a filled box looks like a value. */
+.lp-qty:placeholder-shown {
+  background: var(--tint);
+  border-style: dashed;
+}
+.lp-qty::placeholder { color: var(--text-muted); opacity: 1; }
+.lp-qty:focus { border-color: var(--accent); border-style: solid; }
 .lp-new {
   background: none;
   border: 1px dashed var(--input-border);
