@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -902,7 +902,8 @@ function pickerMarkup(inst) {
                     data-t="${t}">${TYPE_LABELS[t] || t}</button>`).join("")}
           </div>
         </div>
-        <p class="pick-empty" hidden>No instrument matches that.</p>
+        <p class="pick-empty" hidden>No instrument matches that.
+          <a id="pick-request" target="_blank" rel="noopener">Not listed? Request it</a></p>
         ${watchlistTree(inst.id)}
         ${pickerTree(inst.id)}
       </div>
@@ -951,6 +952,16 @@ function wirePicker() {
       if (c) c.textContent = filtering ? String(n) : baseCounts.get(g);
     }
     empty.hidden = hits > 0;
+    // an empty search is the moment someone knows what is missing - hand
+    // them a prefilled issue rather than a dead end
+    const req = empty.querySelector("#pick-request");
+    if (req && !empty.hidden) {
+      const title = encodeURIComponent(`Instrument request: ${input.value.trim()}`);
+      const body = encodeURIComponent(
+        `Please add "${input.value.trim()}" to the flow-watch universe.\n\n` +
+        `Name and exchange (if you know them):\n`);
+      req.href = `https://github.com/noncodersimon/flow-watch/issues/new?title=${title}&body=${body}`;
+    }
   }
 
   typeBtns.forEach((b) =>

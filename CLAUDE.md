@@ -178,22 +178,23 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
-## Current state (Aug 2026, v0.8)
+## Current state (Aug 2026, v2.3)
 
-The universe is the full FTSE 100, the S&P 100 (minus GOOG - see the
-decision log) and 68 LSE-listed ETFs/ETCs alongside the six COT
-commodities: 274 instruments, 268 of them fetched from Yahoo. The
-2026-08-23 backfill seeded five years for the original 32; the ~240 added
-on 2026-08-23 seed on their first run, which also verifies each new
-instrument's currency label against Yahoo before merging anything (see
-data/health.json and the decision log). Expect the first run after the
-expansion to take about an hour, dominated by Investegate pacing.
+The universe is the FTSE 350 (100 + 250), the S&P 500 (minus GOOG, FOX and
+NWS - same-company share classes, see the decision log) and 82 LSE-listed
+ETFs/ETCs alongside the six COT commodities: 937 instruments. The ~660
+added on 2026-08-24 seed on their first run, with each new instrument's
+currency label verified against Yahoo before anything merges (see
+data/health.json and the decision log). Expect the first run after this
+expansion to take two hours or more, dominated by Investegate pacing over
+350 UK names; a few FTSE 250 lines may be refused for serving USD like
+CPG/IHG did, which turns CI red by design - relabel and re-run.
 
 Live: price/volume/ratio (Yahoo via yfinance), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
 before deltas exist), and informed money on both sides of the Atlantic -
-Investegate RNS for the 12 UK equities (PDMR dealings and TR-1 major
-holdings) and SEC Form 4 for the 4 US equities.
+Investegate RNS for the 350 UK equities (PDMR dealings and TR-1 major
+holdings) and SEC Form 4 for the 499 US equities.
 
 ## Roadmap
 
@@ -207,10 +208,9 @@ before touching this area):
    card; a "My lists" strip under the chart prices every list from
    summary.json (price and price_prev), with per-currency totals and a day
    change.
-3. Universe growth for the tail people actually hold: FTSE 250, rest of the
-   S&P 500, wider ETF set - plus a "not listed? request it" link from an
-   empty picker search (prefilled GitHub issue). Costs run time and
-   Investegate pacing, not architecture.
+3. Universe growth (v2.3): FTSE 250, rest of the S&P 500 and more ETFs are
+   in - 937 instruments - with a "not listed? request it" link (prefilled
+   GitHub issue) on an empty picker search. Remaining tail grows by request.
 
 Standing:
 
@@ -675,3 +675,20 @@ on direction - summing pounds and dollars to pick green or red would be
 FX by the back door. Share URLs carry quantities (#/w/name/id:qty,...):
 the URL is the only backup, and a backup that drops holdings defeats it -
 the card copy says so, for anyone sharing rather than backing up.
+
+### 2026-08-24 - The universe is the FTSE 350 + S&P 500 + 82 curated ETFs
+Same method as the first expansion: constituents fetched from Wikipedia
+(server-side - the sandbox proxy still blocks it), CIKs straight from the
+S&P table, nothing typed from memory, and the seed-time currency verifier
+as the safety net for 250 new GBX guesses. Three judgements worth keeping:
+investment trusts get their own UK sector rather than drowning Financials
+(77 of the 250 are trusts, and a Financials group of 120 helps nobody);
+FOX and NWS are dropped exactly as GOOG was, because a shared CIK means
+every Form 4 would be fetched and attributed twice; and trailing-dot LSE
+tickers (TW., QQ., AO.) carry rns overrides so Investegate matching works,
+the BT.A lesson generalised. One table error was overridden knowingly:
+Wikipedia files Bytes Technology under Aerospace & Defence. The accepted
+cost is run time: ~350 UK names through Investegate pacing pushes the
+unattended daily fetch towards two hours. ETF additions stay curated on
+the confidence rule - 14 lines that could be named with certainty, not a
+padded hundred.
