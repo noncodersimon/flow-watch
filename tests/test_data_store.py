@@ -172,12 +172,20 @@ class MetaTest(unittest.TestCase):
     # changes. See the decision log.
     UK_EQUITIES_YAHOO_SERVES_IN_USD = {"CPG.LON", "IHG.LON"}
 
+    # Different from the pair above: these FTSE 250 investment trusts really
+    # do QUOTE in dollars on the LSE - BioPharma Credit, Schiehallion and RTW
+    # Biotech are dollar-denominated funds. Yahoo agrees with the exchange
+    # here (seed closes of $0.98, $2.20 and $2.52), so USD is simply their
+    # currency, not a served-data quirk.
+    UK_EQUITIES_QUOTED_IN_USD = {"BPCR.LON", "MNTN.LON", "RTW.LON"}
+
     def test_uk_equities_are_still_priced_in_pence(self):
         # the pence convention does hold for ordinary shares, and that is what
         # makes BP read 549.50p rather than 549 pounds
         for inst in self.meta["instruments"]:
             if inst["id"].endswith(".LON") and inst["type"] == "equity":
-                if inst["id"] in self.UK_EQUITIES_YAHOO_SERVES_IN_USD:
+                if inst["id"] in (self.UK_EQUITIES_YAHOO_SERVES_IN_USD
+                                  | self.UK_EQUITIES_QUOTED_IN_USD):
                     continue
                 with self.subTest(instrument=inst["id"]):
                     self.assertEqual(inst["currency"], "GBX")

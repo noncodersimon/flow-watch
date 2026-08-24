@@ -2620,7 +2620,7 @@
    "type": "equity",
    "region": "UK",
    "sector": "Investment Trusts",
-   "currency": "GBX"
+   "currency": "USD"
   },
   {
    "id": "BRGE.LON",
@@ -3941,7 +3941,7 @@
    "type": "equity",
    "region": "UK",
    "sector": "Investment Trusts",
-   "currency": "GBX"
+   "currency": "USD"
   },
   {
    "id": "RICA.LON",
@@ -3981,7 +3981,7 @@
    "type": "equity",
    "region": "UK",
    "sector": "Investment Trusts",
-   "currency": "GBX"
+   "currency": "USD"
   },
   {
    "id": "ATR.LON",
@@ -7990,7 +7990,7 @@
    "type": "etf",
    "region": "UK",
    "sector": "UK Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "MIDD.L"
   },
   {
@@ -7999,7 +7999,7 @@
    "type": "etf",
    "region": "UK",
    "sector": "UK Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "IUKD.L"
   },
   {
@@ -8008,7 +8008,7 @@
    "type": "etf",
    "region": "US",
    "sector": "US Tech",
-   "currency": "GBP",
+   "currency": "USD",
    "yahoo": "CNDX.L"
   },
   {
@@ -8035,7 +8035,7 @@
    "type": "etf",
    "region": "Asia",
    "sector": "Japan Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "IJPN.L"
   },
   {
@@ -8044,7 +8044,7 @@
    "type": "etf",
    "region": "Asia",
    "sector": "Asia Pacific Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "IAPD.L"
   },
   {
@@ -8053,7 +8053,7 @@
    "type": "etf",
    "region": "Asia",
    "sector": "Country Equity",
-   "currency": "USD",
+   "currency": "GBX",
    "yahoo": "IKOR.L"
   },
   {
@@ -8062,7 +8062,7 @@
    "type": "etf",
    "region": "Asia",
    "sector": "Country Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "HMCH.L"
   },
   {
@@ -8071,7 +8071,7 @@
    "type": "etf",
    "region": "Europe",
    "sector": "Europe Equity",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "IDVY.L"
   },
   {
@@ -8089,7 +8089,7 @@
    "type": "etf",
    "region": "Global",
    "sector": "Thematics",
-   "currency": "GBP",
+   "currency": "USD",
    "yahoo": "ESPO.L"
   },
   {
@@ -8098,7 +8098,7 @@
    "type": "etf",
    "region": "Global",
    "sector": "Thematics",
-   "currency": "GBP",
+   "currency": "GBX",
    "yahoo": "ISPY.L"
   },
   {

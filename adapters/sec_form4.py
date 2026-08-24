@@ -238,7 +238,10 @@ def parse_form4(xml_text, ref_prefix=""):
             continue
         shares = _number(_text(tx, "transactionAmounts/transactionShares/value"))
         price = _number(_text(tx, "transactionAmounts/transactionPricePerShare/value"))
-        when = _text(tx, "transactionDate/value")
+        # Most filers write a bare ISO date; some filing agents append a
+        # timezone offset ("2026-05-07-05:00", seen on PTC). The date is the
+        # first ten characters either way.
+        when = (_text(tx, "transactionDate/value") or "")[:10] or None
         label = CODE_LABELS.get(code, f"Code {code}")
         bits = [label]
         if shares:
