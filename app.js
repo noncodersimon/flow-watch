@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.7";
+const APP_VERSION = "2.8";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -52,6 +52,7 @@ const state = {
   overlays: {},        // key -> on/off, remembered in localStorage
   watchlists: [],      // [{name, ids}] - personal, per browser, never uploaded
   typeFilter: "all",   // picker type filter, remembered like the lists
+  range: "6M",         // chart range, remembered and shared across instruments
   chart: null,
 };
 
@@ -1007,7 +1008,22 @@ function wirePicker() {
    There is deliberately no 1D: one daily close is a single point, and an
    intraday range needs tick data (phase 2). */
 const RANGES = { "1W": 7, "1M": 31, "6M": 183, "1Y": 366, "5Y": 1830, "Max": 99999 };
-const DEFAULT_RANGE = "1Y";
+const DEFAULT_RANGE = "6M";
+
+/* The chosen range follows you between instruments and visits, like the
+   overlays - comparing several charts over different windows by accident
+   is worse than any default. */
+function loadRangePref() {
+  try {
+    const v = localStorage.getItem("mf-range");
+    if (v && v in RANGES) return v;
+  } catch {}
+  return DEFAULT_RANGE;
+}
+
+function saveRangePref(r) {
+  try { localStorage.setItem("mf-range", r); } catch {}
+}
 
 async function renderDetail(id, token) {
   const inst = state.meta.instruments.find((i) => i.id === id);
@@ -1029,7 +1045,7 @@ async function renderDetail(id, token) {
       </div>
       <div class="list-popover" id="list-popover" hidden></div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
-        `<button data-r="${r}" class="${r === DEFAULT_RANGE ? "active" : ""}">${r}</button>`).join("")}
+        `<button data-r="${r}" class="${r === state.range ? "active" : ""}">${r}</button>`).join("")}
       </div>
       <div class="overlays" role="group" aria-label="Chart overlays">${OVERLAYS.map((o) =>
         `<button data-o="${o.key}" aria-pressed="${state.overlays[o.key] ? "true" : "false"}"
@@ -1062,15 +1078,15 @@ async function renderDetail(id, token) {
   state.chart = echarts.init(chartEl);
   attachTooltipToggle(state.chart);
   attachMarkerClicks(state.chart, inst);
-  drawChart(inst, DEFAULT_RANGE);
+  drawChart(inst, state.range);
 
-  let currentRange = DEFAULT_RANGE;
   document.querySelectorAll(".ranges button").forEach((b) =>
     b.addEventListener("click", () => {
       document.querySelectorAll(".ranges button").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
-      currentRange = b.dataset.r;
-      drawChart(inst, currentRange);
+      state.range = b.dataset.r;
+      saveRangePref(state.range);
+      drawChart(inst, state.range);
     })
   );
 
@@ -1086,7 +1102,7 @@ async function renderDetail(id, token) {
         const benchId = benchmarkFor(inst);
         if (benchId) await loadInstrument(benchId);
       }
-      drawChart(inst, currentRange);
+      drawChart(inst, state.range);
     })
   );
 }
@@ -1434,6 +1450,7 @@ async function route() {
   state.overlays = loadOverlayPrefs();
   state.watchlists = loadWatchlists();
   state.typeFilter = loadTypeFilter();
+  state.range = loadRangePref();
   // one document-level listener, so the watchlist card closes on any tap
   // outside it - attached once here rather than per render
   document.addEventListener("click", (e) => {
