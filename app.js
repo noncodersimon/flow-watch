@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -51,6 +51,7 @@ const state = {
   docs: {},            // id -> data/instruments/<id>.json, fetched on demand
   overlays: {},        // key -> on/off, remembered in localStorage
   watchlists: [],      // [{name, ids}] - personal, per browser, never uploaded
+  typeFilter: "all",   // picker type filter, remembered like the lists
   chart: null,
 };
 
@@ -520,7 +521,7 @@ function watchlistTree(currentId) {
         <summary>${esc(l.name)} <span class="pick-count">${items.length}</span></summary>
         ${items.map((i) => `
           <a class="pick-item${i.id === currentId ? " current" : ""}"
-             href="#/i/${encodeURIComponent(i.id)}" data-search="">
+             href="#/i/${encodeURIComponent(i.id)}" data-search="" data-type="${i.type}">
             <span class="pick-name">${i.name}</span>
             <span class="pick-type">${i.type}</span>
           </a>`).join("")}
@@ -799,6 +800,32 @@ function benchmarkFor(inst) {
 
 /* ---------- instrument picker ---------- */
 
+/* The type filter is the same class of small personal preference as the
+   lists and the overlays, so it persists the same way. Single-select with
+   an All: "just show me ETFs" is one tap, and there is no ambiguous state
+   where every type is toggled off. */
+const TYPE_FILTER_KEY = "mf-typefilter";
+const TYPE_LABELS = { equity: "Equity", etf: "ETF", commodity: "Cmdty" };
+
+function loadTypeFilter() {
+  try {
+    const v = localStorage.getItem(TYPE_FILTER_KEY);
+    if (v) return v; // validated against meta.json once it is loaded
+  } catch {}
+  return "all";
+}
+
+function saveTypeFilter() {
+  try { localStorage.setItem(TYPE_FILTER_KEY, state.typeFilter); } catch {}
+}
+
+function instrumentTypes() {
+  const seen = new Set(state.meta.instruments.map((i) => i.type));
+  const order = Object.keys(TYPE_LABELS).filter((t) => seen.has(t));
+  for (const t of seen) if (!order.includes(t)) order.push(t);
+  return order;
+}
+
 /* region -> sector -> instrument, straight off meta.json, which is the single
    source of truth for the hierarchy. <details> gives the accordion with no
    library and no JS, and keyboard support comes free. */
@@ -831,7 +858,7 @@ function pickerTree(currentId) {
           ${items.map((i) => `
             <a class="pick-item${i.id === currentId ? " current" : ""}"
                href="#/i/${encodeURIComponent(i.id)}"
-               data-search="${searchKey(i)}">
+               data-search="${searchKey(i)}" data-type="${i.type}">
               <span class="pick-name">${i.name}</span>
               <span class="pick-type">${i.type}</span>
             </a>`).join("")}
@@ -861,10 +888,19 @@ function pickerMarkup(inst) {
       </summary>
       <div class="picker-body">
         <div class="pick-search">
-          <span class="pick-search-icon" aria-hidden="true">&#9906;</span>
-          <input type="search" id="pick-search" autocomplete="off"
-                 placeholder="Search name, ticker or sector"
-                 aria-label="Search instruments">
+          <div class="pick-search-box">
+            <span class="pick-search-icon" aria-hidden="true">&#9906;</span>
+            <input type="search" id="pick-search" autocomplete="off"
+                   placeholder="Search"
+                   aria-label="Search instruments">
+          </div>
+          <div class="pick-types" role="group" aria-label="Filter by type">
+            <button class="pick-type-btn${state.typeFilter === "all" ? " active" : ""}"
+                    data-t="all">All</button>
+            ${instrumentTypes().map((t) => `
+            <button class="pick-type-btn${state.typeFilter === t ? " active" : ""}"
+                    data-t="${t}">${TYPE_LABELS[t] || t}</button>`).join("")}
+          </div>
         </div>
         <p class="pick-empty" hidden>No instrument matches that.</p>
         ${watchlistTree(inst.id)}
@@ -886,34 +922,49 @@ function wirePicker() {
   const items = [...picker.querySelectorAll(".pick-item")];
   const groups = [...picker.querySelectorAll(".pick-sector, .pick-region")];
   const openByDefault = new Map(groups.map((g) => [g, g.open]));
+  const baseCounts = new Map(groups.map((g) => {
+    const c = g.querySelector(":scope > summary .pick-count");
+    return [g, c ? c.textContent : ""];
+  }));
+  const typeBtns = [...picker.querySelectorAll(".pick-type-btn")];
 
-  const visibleIn = (g) => [...g.querySelectorAll(".pick-item")].some((a) => !a.hidden);
-
-  function apply(query) {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      items.forEach((a) => { a.hidden = false; });
-      groups.forEach((g) => { g.hidden = false; g.open = openByDefault.get(g); });
-      empty.hidden = true;
-      return;
-    }
+  function apply() {
+    const q = input.value.trim().toLowerCase();
+    const t = state.typeFilter;
+    const filtering = Boolean(q) || t !== "all";
     let hits = 0;
     for (const a of items) {
-      const match = a.dataset.search.includes(q);
+      const match = (!q || a.dataset.search.includes(q)) &&
+                    (t === "all" || a.dataset.type === t);
       a.hidden = !match;
       if (match) hits += 1;
     }
     for (const g of groups) {
-      const any = visibleIn(g);
-      g.hidden = !any;
-      g.open = any;
+      const n = [...g.querySelectorAll(".pick-item")].filter((a) => !a.hidden).length;
+      g.hidden = filtering && n === 0;
+      // a query opens the surviving groups, because a match buried in a
+      // collapsed section reads as no match at all - the type filter alone
+      // keeps the calm collapsed-by-default browsing
+      g.open = q ? n > 0 : openByDefault.get(g);
+      // the counts follow the filter, or "UK 109" lies next to three ETFs
+      const c = g.querySelector(":scope > summary .pick-count");
+      if (c) c.textContent = filtering ? String(n) : baseCounts.get(g);
     }
     empty.hidden = hits > 0;
   }
 
-  input.addEventListener("input", () => apply(input.value));
+  typeBtns.forEach((b) =>
+    b.addEventListener("click", () => {
+      state.typeFilter = b.dataset.t;
+      saveTypeFilter();
+      typeBtns.forEach((x) =>
+        x.classList.toggle("active", x.dataset.t === state.typeFilter));
+      apply();
+    }));
+
+  input.addEventListener("input", apply);
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { input.value = ""; apply(""); return; }
+    if (e.key === "Escape") { input.value = ""; apply(); return; }
     if (e.key !== "Enter") return;
     e.preventDefault();
     const first = items.find((a) => !a.hidden);
@@ -923,8 +974,11 @@ function wirePicker() {
   // keyboard would cover the list it is meant to help you read.
   picker.addEventListener("toggle", () => {
     if (picker.open && window.matchMedia("(min-width: 641px)").matches) input.focus();
-    if (!picker.open) { input.value = ""; apply(""); }
+    if (!picker.open) { input.value = ""; apply(); }
   });
+
+  // the remembered type filter shapes the tree from the first open
+  apply();
 }
 
 /* ---------- detail view ---------- */
@@ -1353,6 +1407,7 @@ async function route() {
   readColours();
   state.overlays = loadOverlayPrefs();
   state.watchlists = loadWatchlists();
+  state.typeFilter = loadTypeFilter();
   // one document-level listener, so the watchlist card closes on any tap
   // outside it - attached once here rather than per render
   document.addEventListener("click", (e) => {
@@ -1369,6 +1424,11 @@ async function route() {
     document.getElementById("app").innerHTML =
       '<p class="empty">Could not load data/meta.json - is the site being served from the repo root?</p>';
     return;
+  }
+  // a stored filter naming a type that no longer exists must not blank the picker
+  if (state.typeFilter !== "all" &&
+      !state.meta.instruments.some((i) => i.type === state.typeFilter)) {
+    state.typeFilter = "all";
   }
   document.getElementById("updated").textContent =
     state.summary && state.summary.updated
