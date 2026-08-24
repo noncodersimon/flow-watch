@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.7";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -546,11 +546,10 @@ function renderListPopover(inst) {
         <input type="checkbox" data-idx="${idx}"${l.ids.includes(inst.id) ? " checked" : ""}>
         ${esc(l.name)} <span class="pick-count">${l.ids.length}</span>
       </label>
-      ${l.ids.includes(inst.id) ? `
       <input class="lp-qty" type="number" min="0" step="any" inputmode="decimal"
              placeholder="qty (optional)" value="${l.qty[inst.id] ?? ""}" data-idx="${idx}"
              aria-label="Quantity held in ${esc(l.name)}"
-             title="Optional: how many you hold - gives the list a value">` : "<span></span>"}
+             title="Optional: how many you hold - typing one also adds the instrument to the list">
       <span class="lp-actions">
         <button class="lp-share" data-idx="${idx}"
                 title="Copy a link that opens or restores this list">Copy link</button>
@@ -571,9 +570,19 @@ function renderListPopover(inst) {
       const l = state.watchlists[Number(inp.dataset.idx)];
       if (!l) return;
       const n = Number(inp.value);
-      if (Number.isFinite(n) && n > 0) l.qty[inst.id] = n;
-      else delete l.qty[inst.id];
+      if (Number.isFinite(n) && n > 0) {
+        // typing a quantity IS adding the holding - nobody should have to
+        // tick the list first and find the box afterwards
+        if (!l.ids.includes(inst.id)) l.ids.push(inst.id);
+        l.qty[inst.id] = n;
+      } else {
+        // clearing the box drops the quantity, not the membership
+        delete l.qty[inst.id];
+      }
       saveWatchlists();
+      refreshStar(inst);
+      rebuildPicker(inst);
+      renderListPopover(inst);
       renderMyLists();
     }));
 
