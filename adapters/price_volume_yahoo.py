@@ -186,7 +186,8 @@ def chunks(items, size):
 
 def main():
     meta = load_meta()
-    instruments = [i for i in meta["instruments"] if i["type"] in ("equity", "etf")]
+    instruments = [i for i in meta["instruments"]
+                   if i["type"] in ("equity", "etf", "fund")]
     by_symbol = {yahoo_symbol(i): i for i in instruments}
     print(f"price_volume_yahoo: {len(by_symbol)} symbols, period {HISTORY_PERIOD}")
 
@@ -251,7 +252,11 @@ def main():
                       f"change of units, refusing to merge", file=sys.stderr)
                 continue
             merge_series(price_store, inst["id"], closes)
-            merge_series(volume_store, inst["id"], volumes)
+            # An OEIC has no exchange volume - it prices once a day at NAV.
+            # Yahoo pads fund volume with zeros; storing them would draw a
+            # meaningless panel and feed fake quiet days into the ratio.
+            if inst["type"] != "fund":
+                merge_series(volume_store, inst["id"], volumes)
             fetched += 1
             print(f"  {inst['id']:10} ({symbol:9}) {len(closes):5} closes "
                   f"{closes[0][0]} -> {closes[-1][0]}")

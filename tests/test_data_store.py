@@ -32,7 +32,7 @@ SERIES_METRICS = [
 ]
 
 EVENT_KINDS = {"pdmr_buy", "pdmr_sell", "pdmr_award", "pdmr_scheduled", "tr1_up", "tr1_down"}
-INSTRUMENT_TYPES = {"equity", "etf", "commodity"}
+INSTRUMENT_TYPES = {"equity", "etf", "commodity", "fund"}
 
 
 def store(metric):

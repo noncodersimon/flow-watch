@@ -8109,6 +8109,33 @@
    "sector": "Commodities",
    "currency": "USD",
    "yahoo": "CORN.L"
+  },
+  {
+   "id": "FUNDSMITH.FUND",
+   "name": "Fundsmith Equity (T Acc)",
+   "type": "fund",
+   "region": "UK",
+   "sector": "Funds",
+   "currency": "GBP",
+   "yahoo": "0P0000RU7W.L"
+  },
+  {
+   "id": "VLS60.FUND",
+   "name": "Vanguard LifeStrategy 60% Equity (Acc)",
+   "type": "fund",
+   "region": "UK",
+   "sector": "Funds",
+   "currency": "GBP",
+   "yahoo": "0P0000TKZK.L"
+  },
+  {
+   "id": "VLS80.FUND",
+   "name": "Vanguard LifeStrategy 80% Equity (Acc)",
+   "type": "fund",
+   "region": "UK",
+   "sector": "Funds",
+   "currency": "GBP",
+   "yahoo": "0P0000TKZM.L"
   }
  ]
 }

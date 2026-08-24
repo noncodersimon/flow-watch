@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -805,7 +805,7 @@ function benchmarkFor(inst) {
    an All: "just show me ETFs" is one tap, and there is no ambiguous state
    where every type is toggled off. */
 const TYPE_FILTER_KEY = "mf-typefilter";
-const TYPE_LABELS = { equity: "Equity", etf: "ETF", commodity: "Cmdty" };
+const TYPE_LABELS = { equity: "Equity", etf: "ETF", fund: "Fund", commodity: "Cmdty" };
 
 function loadTypeFilter() {
   try {
@@ -1034,7 +1034,9 @@ async function renderDetail(id, token) {
       <div class="event-card" id="event-card" hidden></div>
       ${stripMarkup(inst.id)}
       <div id="mylists"></div>
-      <p class="panel-note">${inst.type === "commodity"
+      <p class="panel-note">${inst.type === "fund"
+        ? "Open-ended fund: the line is the daily NAV set by the manager, priced once a day. No exchange volume, flow or insider data exists for OEICs - this entry is here so a whole portfolio can be valued in one place."
+        : inst.type === "commodity"
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
         : inst.type === "etf"
         ? "Net flow = daily change in shares outstanding x price - actual creation/redemption of units, estimated from Yahoo data. The line is cumulative flow over the selected range."
@@ -1219,21 +1221,25 @@ function drawChart(inst, rangeKey) {
   }];
 
   /* ----- volume panel ----- */
-  const volScale = axisScale(volData.map((v) => v.value));
-  const volumeSeries = [{ name: "Volume", type: "bar", data: volData }];
-  if (on.volavg) {
-    const data = clipDerived(sma(fullVolume, 20));
-    if (hasAny(data)) {
-      volumeSeries.push({ name: "Vol 20d avg", type: "line", data, showSymbol: false,
-        lineStyle: { color: COLOURS.accent, width: 1.3 }, z: 3 });
+  // An OEIC has no exchange volume - it prices once a day at NAV - so a fund
+  // chart is the price panel alone rather than an empty volume strip.
+  if (fullVolume.length) {
+    const volScale = axisScale(volData.map((v) => v.value));
+    const volumeSeries = [{ name: "Volume", type: "bar", data: volData }];
+    if (on.volavg) {
+      const data = clipDerived(sma(fullVolume, 20));
+      if (hasAny(data)) {
+        volumeSeries.push({ name: "Vol 20d avg", type: "line", data, showSymbol: false,
+          lineStyle: { color: COLOURS.accent, width: 1.3 }, z: 3 });
+      }
     }
+    panels.push({
+      weight: 1.3,
+      axis: { type: "value", splitNumber: 2, name: axisName("Vol", volScale), ...AXIS_NAME_STYLE,
+              axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
+      series: volumeSeries,
+    });
   }
-  panels.push({
-    weight: 1.3,
-    axis: { type: "value", splitNumber: 2, name: axisName("Vol", volScale), ...AXIS_NAME_STYLE,
-            axisLabel: { formatter: (v) => scaledLabel(v, volScale) } },
-    series: volumeSeries,
-  });
 
   /* ----- ETF net flow panel ----- */
   if (flow.length) {

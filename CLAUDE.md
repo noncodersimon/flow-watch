@@ -210,7 +210,9 @@ before touching this area):
    change.
 3. Universe growth (v2.3): FTSE 250, rest of the S&P 500 and more ETFs are
    in - 937 instruments - with a "not listed? request it" link (prefilled
-   GitHub issue) on an empty picker search. Remaining tail grows by request.
+   GitHub issue) on an empty picker search. Remaining tail grows by request. OEICs
+   are in as a fourth type (v2.4), price-only by design - see the decision
+   log - seeded with three flagships, growing by request.
 
 Standing:
 
@@ -692,3 +694,21 @@ cost is run time: ~350 UK names through Investegate pacing pushes the
 unattended daily fetch towards two hours. ETF additions stay curated on
 the confidence rule - 14 lines that could be named with certainty, not a
 padded hundred.
+
+### 2026-08-24 - OEICs are a fourth type, deliberately price-only
+Open-ended funds price once a day at NAV and never touch an exchange, so
+none of this dashboard's signals exist for them - no volume, no
+creation/redemption, no insider dealings. They are in anyway, as type
+"fund", because the portfolio half of the site wants them: people hold
+OEICs in ISAs and pensions, and "My lists" can value a NAV series like
+anything else. The honesty rules: funds draw the price panel alone (no
+empty volume strip), the panel note says exactly what an OEIC entry is
+and is not, and they get their own Fund pill in the type filter so they
+never masquerade as flow instruments. Yahoo identifies UK funds by opaque
+Morningstar codes (0P....L), one per share class, so every code is
+verified against its Yahoo quote page before it enters meta.json - the
+ISIN-style twins Yahoo also carries proved stale and are not used. Seeded
+with three flagships (Fundsmith Equity, LifeStrategy 60 and 80); the rest
+arrive by request like the equity tail. informed_money and etf_flows
+select by type and never see them; price_volume_yahoo fetches their NAV
+but refuses to store Yahoo's zero-padded fund "volume".
