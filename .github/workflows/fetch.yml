@@ -42,4 +42,15 @@ jobs:
           git config user.email "actions@github.com"
           git add data/
           git diff --cached --quiet || git commit -m "data: $(date -u +%F)"
-          git push
+          # The run takes hours and code lands on main meanwhile. A bare push
+          # from the checkout-time commit is then rejected and the whole
+          # fetch dies with the runner - so rebase the data commit onto
+          # whatever main has become, and retry around the race window.
+          # Only this workflow touches /data, so the rebase cannot conflict.
+          pushed=""
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push; then pushed=1; break; fi
+            echo "push attempt $attempt failed, retrying" >&2
+            sleep 10
+          done
+          [ -n "$pushed" ]
