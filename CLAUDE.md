@@ -197,11 +197,35 @@ holdings) and SEC Form 4 for the 4 US equities.
 
 ## Roadmap
 
-1. Verify 10y backfill completes across the rotation (2 runs) and 1Y/5Y ranges
+Near term - personal lists, all client-side (see the 2026-08-24 decision
+before touching this area):
+
+1. Watchlists (v2.0): named lists in localStorage, a "My lists" group above
+   the regions in the picker, a star on the chart header to add and remove,
+   and a #/w/ share URL that doubles as the backup.
+2. Portfolio values: optional quantity per holding, value and total computed
+   client-side from prices already loaded; a "My list" strip under the chart
+   fed by summary.json.
+3. Universe growth for the tail people actually hold: FTSE 250, rest of the
+   S&P 500, wider ETF set - plus a "not listed? request it" link from an
+   empty picker search (prefilled GitHub issue). Costs run time and
+   Investegate pacing, not architecture.
+
+Standing:
+
+4. Verify 10y backfill completes across the rotation (2 runs) and 1Y/5Y ranges
    differentiate.
-2. Sector-level aggregation view (category -> sector -> instrument drill-down).
-3. Phase 2: paid tick data (Polygon/Databento) -> order-flow imbalance and
+5. Sector-level aggregation view (category -> sector -> instrument drill-down).
+6. Phase 2: paid tick data (Polygon/Databento) -> order-flow imbalance and
    block-trade flags as new adapters. No rework of existing code expected.
+
+Parked - a personal finance hub (tracking contracts: energy, insurance,
+ISP, renewal dates). A different product, not an expansion of this one:
+entirely user-entered private data, and it genuinely needs accounts, server
+storage and notifications. If pursued it becomes a separate app under the
+Digitelos umbrella that consumes this site's public /data as an API -
+flow-watch stays the market-data engine. Recorded here so the idea cannot
+quietly drag a backend into this codebase before demand proves it.
 
 ### 2026-08-22 - The web sandbox network constraint is superseded, but only partly
 The previous entry in Known constraints said every source host 403s at the
@@ -621,3 +645,18 @@ rather than in the browser, because the browser only holds summary.json
 on the front screen and computing it there would mean fetching every
 instrument document. Collapsed by default: five pills answer the everyday
 question, twenty are there when asked.
+
+### 2026-08-24 - Watchlists are client-side, and the schema is the future-proofing
+"My lists" in the picker needs no accounts and no server: a watchlist is
+the same class of data as the overlay toggles - small, personal, not
+authoritative - so it lives in localStorage as one versioned blob
+({version, lists}) under the mf-watchlists key, with a #/w/ share URL as
+both transfer and backup. The honest costs are accepted and should not be
+"fixed" casually: lists are per browser, and clearing site data loses them
+- the share URL is the mitigation, and "portfolios never leave your device"
+is the privacy story, worth keeping true. Rejected now: a sync backend
+(it arrives alongside the static site if demand proves it, never as a
+rewrite) and on-demand fetching of arbitrary tickers (which would trade
+the whole static architecture for the long tail - the universe grows by
+curation and request instead). The parked personal-contracts idea changes
+nothing here: if it happens it is a separate product consuming /data.

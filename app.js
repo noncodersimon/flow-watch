@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "1.10";
+const APP_VERSION = "2.0";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -50,6 +50,7 @@ const state = {
   summary: null,       // data/summary.json - latest values, no history
   docs: {},            // id -> data/instruments/<id>.json, fetched on demand
   overlays: {},        // key -> on/off, remembered in localStorage
+  watchlists: [],      // [{name, ids}] - personal, per browser, never uploaded
   chart: null,
 };
 
@@ -444,6 +445,176 @@ function saveOverlayPrefs() {
   try { localStorage.setItem("mf-overlays", JSON.stringify(state.overlays)); } catch {}
 }
 
+/* ---------- watchlists ----------
+
+   Personal lists live in the browser, deliberately: a watchlist is the same
+   class of data as the overlay toggles - small, personal, not authoritative
+   - and keeping it client-side means portfolios never leave the device.
+   One versioned blob so a future sync backend has exactly one thing to
+   store. The #/w/ share URL is both transfer and backup. See the
+   2026-08-24 decision before adding accounts or a server here. */
+
+const WATCHLIST_KEY = "mf-watchlists";
+const MAX_LIST_NAME = 40;
+
+/* List names are the one piece of user-typed text the UI renders. */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function loadWatchlists() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "null");
+    if (saved && saved.version === 1 && Array.isArray(saved.lists)) {
+      return saved.lists.filter((l) =>
+        l && typeof l.name === "string" && Array.isArray(l.ids));
+    }
+  } catch { /* a corrupt blob is not worth breaking the site over */ }
+  return [];
+}
+
+function saveWatchlists() {
+  try {
+    localStorage.setItem(WATCHLIST_KEY,
+      JSON.stringify({ version: 1, lists: state.watchlists }));
+  } catch {}
+}
+
+function onAnyList(id) {
+  return state.watchlists.some((l) => l.ids.includes(id));
+}
+
+function shareUrl(list) {
+  return location.origin + location.pathname +
+    "#/w/" + encodeURIComponent(list.name) + "/" +
+    list.ids.map(encodeURIComponent).join(",");
+}
+
+/* "My lists" sits above the regions in the picker, same accordion, built
+   from the browser's own lists. Items carry an empty data-search so the
+   search box never shows the same instrument twice - the canonical entry
+   under its region already matches. */
+function watchlistTree(currentId) {
+  if (!state.watchlists.length) return "";
+  const byId = new Map(state.meta.instruments.map((i) => [i.id, i]));
+  const total = state.watchlists.reduce((n, l) => n + l.ids.length, 0);
+  const body = state.watchlists.map((l) => {
+    const items = l.ids.map((id) => byId.get(id)).filter(Boolean);
+    return `
+      <details class="pick-sector"${items.some((i) => i.id === currentId) ? " open" : ""}>
+        <summary>${esc(l.name)} <span class="pick-count">${items.length}</span></summary>
+        ${items.map((i) => `
+          <a class="pick-item${i.id === currentId ? " current" : ""}"
+             href="#/i/${encodeURIComponent(i.id)}" data-search="">
+            <span class="pick-name">${i.name}</span>
+            <span class="pick-type">${i.type}</span>
+          </a>`).join("")}
+      </details>`;
+  }).join("");
+  return `
+    <details class="pick-region pick-mylists"${state.watchlists.some((l) => l.ids.includes(currentId)) ? " open" : ""}>
+      <summary>My lists <span class="pick-count">${total}</span></summary>
+      ${body}
+    </details>`;
+}
+
+/* The star on the chart header opens a card listing every list with a
+   tick for membership, plus create, delete and copy-link. It re-renders
+   itself after each action - cheap, and it keeps one source of truth. */
+function renderListPopover(inst) {
+  const pop = document.getElementById("list-popover");
+  if (!pop) return;
+  const rows = state.watchlists.map((l, idx) => `
+    <div class="lp-row">
+      <label class="lp-name">
+        <input type="checkbox" data-idx="${idx}"${l.ids.includes(inst.id) ? " checked" : ""}>
+        ${esc(l.name)} <span class="pick-count">${l.ids.length}</span>
+      </label>
+      <span class="lp-actions">
+        <button class="lp-share" data-idx="${idx}"
+                title="Copy a link that opens or restores this list">Copy link</button>
+        <button class="lp-del" data-idx="${idx}" aria-label="Delete ${esc(l.name)}"
+                title="Delete this list">&times;</button>
+      </span>
+    </div>`).join("");
+  pop.innerHTML = `
+    <div class="lp-head"><strong>Watchlists</strong>
+      <span class="lp-note">saved in this browser only - Copy link to back up or share</span>
+    </div>
+    ${rows || '<p class="lp-empty">No lists yet.</p>'}
+    <button class="lp-new">+ New list</button>`;
+
+  pop.querySelectorAll("input[type=checkbox]").forEach((box) =>
+    box.addEventListener("change", () => {
+      const l = state.watchlists[Number(box.dataset.idx)];
+      if (!l) return;
+      if (box.checked) { if (!l.ids.includes(inst.id)) l.ids.push(inst.id); }
+      else l.ids = l.ids.filter((id) => id !== inst.id);
+      saveWatchlists();
+      refreshStar(inst);
+      rebuildPicker(inst);
+      renderListPopover(inst);
+    }));
+  pop.querySelectorAll(".lp-share").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const l = state.watchlists[Number(b.dataset.idx)];
+      if (!l) return;
+      const url = shareUrl(l);
+      try { await navigator.clipboard.writeText(url); b.textContent = "Copied"; }
+      catch { prompt("Copy this link:", url); }
+      setTimeout(() => { b.textContent = "Copy link"; }, 1500);
+    }));
+  pop.querySelectorAll(".lp-del").forEach((b) =>
+    b.addEventListener("click", () => {
+      const idx = Number(b.dataset.idx);
+      const l = state.watchlists[idx];
+      if (!l || !confirm(`Delete the list "${l.name}"?`)) return;
+      state.watchlists.splice(idx, 1);
+      saveWatchlists();
+      refreshStar(inst);
+      rebuildPicker(inst);
+      renderListPopover(inst);
+    }));
+  pop.querySelector(".lp-new").addEventListener("click", () => {
+    const name = (prompt("Name the new list:", "My watchlist") || "")
+      .trim().slice(0, MAX_LIST_NAME);
+    if (!name) return;
+    state.watchlists.push({ name, ids: [inst.id] });
+    saveWatchlists();
+    refreshStar(inst);
+    rebuildPicker(inst);
+    renderListPopover(inst);
+  });
+}
+
+function refreshStar(inst) {
+  const b = document.getElementById("star");
+  if (!b) return;
+  const on = onAnyList(inst.id);
+  b.textContent = on ? "★" : "☆";
+  b.classList.toggle("on", on);
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function rebuildPicker(inst) {
+  const picker = document.getElementById("picker");
+  if (!picker) return;
+  picker.outerHTML = pickerMarkup(inst);
+  wirePicker();
+}
+
+function wireStar(inst) {
+  const b = document.getElementById("star");
+  const pop = document.getElementById("list-popover");
+  if (!b || !pop) return;
+  refreshStar(inst);
+  b.addEventListener("click", () => {
+    if (pop.hidden) renderListPopover(inst);
+    pop.hidden = !pop.hidden;
+  });
+}
+
 /* The benchmark is just another instrument already in the store - meta.json
    maps region to one, and an instrument may override it. Nothing benchmarks
    against itself. */
@@ -522,6 +693,7 @@ function pickerMarkup(inst) {
                  aria-label="Search instruments">
         </div>
         <p class="pick-empty" hidden>No instrument matches that.</p>
+        ${watchlistTree(inst.id)}
         ${pickerTree(inst.id)}
       </div>
     </details>`;
@@ -602,7 +774,12 @@ async function renderDetail(id, token) {
   document.getElementById("app").innerHTML = `
     <div class="detail">
       ${pickerMarkup(inst)}
-      <div class="meta-line">${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</div>
+      <div class="meta-line">
+        <span>${inst.type.toUpperCase()} · ${inst.sector} · ${inst.region}</span>
+        <button class="star" id="star" aria-pressed="false"
+                title="Add to a watchlist">☆</button>
+      </div>
+      <div class="list-popover" id="list-popover" hidden></div>
       <div class="ranges">${Object.keys(RANGES).map((r) =>
         `<button data-r="${r}" class="${r === DEFAULT_RANGE ? "active" : ""}">${r}</button>`).join("")}
       </div>
@@ -627,6 +804,7 @@ async function renderDetail(id, token) {
 
   wirePicker();
   wireStrip();
+  wireStar(inst);
 
   const chartEl = document.getElementById("chart");
   state.chart = echarts.init(chartEl);
@@ -953,6 +1131,31 @@ async function route() {
   if (state.chart) { state.chart.dispose(); state.chart = null; }
   const h = location.hash;
   window.scrollTo(0, 0);
+  // #/w/<name>/<id,id,...> - a shared watchlist. Offer to save it, then land
+  // on its first instrument. Unknown ids are dropped rather than stored: the
+  // universe is meta.json's, and a stale link should not plant dead entries.
+  if (h.startsWith("#/w/")) {
+    const rest = h.slice(4);
+    const slash = rest.indexOf("/");
+    const name = (decodeURIComponent(slash < 0 ? rest : rest.slice(0, slash)) || "Shared list")
+      .slice(0, MAX_LIST_NAME);
+    const ids = slash < 0 ? [] : rest.slice(slash + 1).split(",").map(decodeURIComponent);
+    const known = new Set(state.meta.instruments.map((i) => i.id));
+    const good = [...new Set(ids)].filter((id) => known.has(id));
+    if (good.length) {
+      const dropped = new Set(ids).size - good.length;
+      const already = state.watchlists.some(
+        (l) => l.name === name && l.ids.join() === good.join());
+      if (!already && confirm(`Save the watchlist "${name}" (${good.length} instrument${good.length === 1 ? "" : "s"}${dropped ? `; ${dropped} not on this site` : ""}) to this browser?`)) {
+        state.watchlists.push({ name, ids: good });
+        saveWatchlists();
+      }
+      location.hash = "#/i/" + encodeURIComponent(good[0]);
+    } else {
+      location.hash = "#/";
+    }
+    return; // the hash change above re-routes
+  }
   // #/screener was a destination until v1.2 - old links land on the chart
   const id = h.startsWith("#/i/") ? decodeURIComponent(h.slice(4)) : defaultInstrumentId();
   await renderDetail(id, token);
@@ -961,6 +1164,18 @@ async function route() {
 (async function init() {
   readColours();
   state.overlays = loadOverlayPrefs();
+  state.watchlists = loadWatchlists();
+  // one document-level listener, so the watchlist card closes on any tap
+  // outside it - attached once here rather than per render
+  document.addEventListener("click", (e) => {
+    const pop = document.getElementById("list-popover");
+    if (!pop || pop.hidden) return;
+    // a tap on a control inside the card re-renders it, detaching the
+    // target before this listener runs - detached means it was inside
+    if (!e.target.isConnected) return;
+    if (pop.contains(e.target) || e.target.closest("#star")) return;
+    pop.hidden = true;
+  });
   const ok = await loadAll();
   if (!ok) {
     document.getElementById("app").innerHTML =

@@ -56,6 +56,11 @@
 
 * { box-sizing: border-box; }
 
+/* The hidden attribute must always win. Without this, any element whose
+   class sets its own display (e.g. .pick-item's flex) ignores hidden - which
+   is how the picker search quietly showed every line in a matched sector. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -137,7 +142,97 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   margin-bottom: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
+
+/* Watchlist star. Filled and cobalt once the instrument is on any list. */
+.star {
+  background: none;
+  border: none;
+  padding: 0 0.2rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.star:hover { color: var(--accent); }
+.star.on { color: var(--accent); }
+
+/* Watchlist card, opened by the star - sits in the flow like the event
+   card rather than floating, which is what works on a phone. */
+.list-popover {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  margin: -0.4rem 0 0.85rem;
+  font-size: 0.9rem;
+}
+.lp-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-family: var(--font-display);
+  margin-bottom: 0.35rem;
+}
+.lp-note {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.lp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.lp-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  min-width: 0;
+}
+.lp-name input { accent-color: var(--accent); }
+.lp-actions { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+.lp-share {
+  background: var(--tint);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.lp-share:hover { background: var(--accent); color: var(--on-accent); }
+.lp-del {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  cursor: pointer;
+}
+.lp-del:hover { color: var(--down); }
+.lp-empty { color: var(--text-muted); margin: 0.3rem 0; }
+.lp-new {
+  background: none;
+  border: 1px dashed var(--input-border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 0.45rem;
+}
+.lp-new:hover { border-color: var(--accent); color: var(--accent); }
 
 .ranges { margin-bottom: 0.7rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .ranges button {
