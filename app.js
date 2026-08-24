@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.4";
+const APP_VERSION = "2.5";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -546,12 +546,12 @@ function renderListPopover(inst) {
         <input type="checkbox" data-idx="${idx}"${l.ids.includes(inst.id) ? " checked" : ""}>
         ${esc(l.name)} <span class="pick-count">${l.ids.length}</span>
       </label>
+      ${l.ids.includes(inst.id) ? `
+      <input class="lp-qty" type="number" min="0" step="any" inputmode="decimal"
+             placeholder="qty (optional)" value="${l.qty[inst.id] ?? ""}" data-idx="${idx}"
+             aria-label="Quantity held in ${esc(l.name)}"
+             title="Optional: how many you hold - gives the list a value">` : "<span></span>"}
       <span class="lp-actions">
-        ${l.ids.includes(inst.id) ? `
-        <input class="lp-qty" type="number" min="0" step="any" inputmode="decimal"
-               placeholder="qty" value="${l.qty[inst.id] ?? ""}" data-idx="${idx}"
-               aria-label="Quantity held in ${esc(l.name)}"
-               title="Optional: how many you hold - gives the list a value">` : ""}
         <button class="lp-share" data-idx="${idx}"
                 title="Copy a link that opens or restores this list">Copy link</button>
         <button class="lp-del" data-idx="${idx}" aria-label="Delete ${esc(l.name)}"

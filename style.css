@@ -184,14 +184,18 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+/* Three zones - name, quantity, actions - so the quantity box sits in the
+   middle of the row rather than up against Copy link, which read as if the
+   two were related. */
 .lp-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 0.6rem;
   padding: 0.3rem 0;
   border-bottom: 1px solid var(--border);
 }
+.lp-row .lp-actions { justify-self: end; }
 .lp-name {
   display: flex;
   align-items: center;
@@ -223,7 +227,7 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
 .lp-del:hover { color: var(--down); }
 .lp-empty { color: var(--text-muted); margin: 0.3rem 0; }
 .lp-qty {
-  width: 4.6rem;
+  width: 7.4rem;
   border: 1px solid var(--input-border);
   border-radius: var(--radius-sm);
   padding: 0.2rem 0.4rem;
