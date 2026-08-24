@@ -178,17 +178,20 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
-## Current state (Aug 2026, v2.3)
+## Current state (Aug 2026, v2.8)
 
 The universe is the FTSE 350 (100 + 250), the S&P 500 (minus GOOG, FOX and
-NWS - same-company share classes, see the decision log) and 82 LSE-listed
-ETFs/ETCs alongside the six COT commodities: 937 instruments. The ~660
-added on 2026-08-24 seed on their first run, with each new instrument's
-currency label verified against Yahoo before anything merges (see
-data/health.json and the decision log). Expect the first run after this
-expansion to take two hours or more, dominated by Investegate pacing over
-350 UK names; a few FTSE 250 lines may be refused for serving USD like
-CPG/IHG did, which turns CI red by design - relabel and re-run.
+NWS - same-company share classes, see the decision log), 82 LSE-listed
+ETFs/ETCs, three OEICs (type "fund", price-only) and the six COT
+commodities: 940 instruments, all seeded with up to five years of history
+on 2026-08-24. The seed run surfaced 13 wrong currency guesses (all
+relabelled to what Yahoo serves - three FTSE 250 trusts genuinely quote
+in dollars) and one Form 4 date-format quirk (PTC), both fixed. The
+daily fetch takes about three hours, dominated by Investegate pacing
+over 350 UK names; its commit step rebases onto main so code pushed
+mid-run cannot lose the data. Front end v2.8: watchlists with quantities
+and per-currency portfolio values, type filter, request-an-instrument
+link, remembered 6M range.
 
 Live: price/volume/ratio (Yahoo via yfinance), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
