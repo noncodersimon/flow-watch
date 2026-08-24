@@ -207,6 +207,10 @@ def build_summary():
                 row[metric] = points[-1][1]
                 if metric == "price":
                     row["date"] = points[-1][0]
+                    if len(points) >= 2:
+                        # previous close, so the front end can price a
+                        # portfolio's day change without fetching history
+                        row["price_prev"] = points[-2][1]
                 if metric == "volume_ratio" and len(points) >= 2:
                     # the week view: the same ratio averaged over the last
                     # five sessions, so one quiet Friday cannot hide a busy week

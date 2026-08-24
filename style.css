@@ -222,6 +222,16 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
 }
 .lp-del:hover { color: var(--down); }
 .lp-empty { color: var(--text-muted); margin: 0.3rem 0; }
+.lp-qty {
+  width: 4.6rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.4rem;
+  font: inherit;
+  font-size: 0.8rem;
+  background: var(--surface);
+  color: var(--text);
+}
 .lp-new {
   background: none;
   border: 1px dashed var(--input-border);
@@ -233,6 +243,39 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   margin-top: 0.45rem;
 }
 .lp-new:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- "My lists" values block ---------- */
+.mylist-pill { cursor: default; }
+.mylist-total { font-weight: 600; color: var(--text); }
+.strip-section h3 .mylist-total { margin-left: 0.5rem; }
+.mylist-day { font-weight: 500; margin-left: 0.5rem; font-size: 0.8rem; }
+.mylist-day.up, .mylist-table td.up { color: var(--up); }
+.mylist-day.down, .mylist-table td.down { color: var(--down); }
+.mylist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.mylist-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.mylist-table td {
+  padding: 0.35rem 0.5rem 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.mylist-table td:first-child {
+  white-space: normal;
+  min-width: 7rem;
+}
+.mylist-table td a { color: var(--accent); text-decoration: none; }
+.mylist-table td a:hover { text-decoration: underline; }
+.mylist-table th:nth-child(n+2), .mylist-table td:nth-child(n+2) { text-align: right; }
+.mylist-hint { color: var(--text-muted); font-size: 0.85rem; margin: 0.3rem 0; }
 
 .ranges { margin-bottom: 0.7rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .ranges button {

@@ -203,9 +203,10 @@ before touching this area):
 1. Watchlists (v2.0): named lists in localStorage, a "My lists" group above
    the regions in the picker, a star on the chart header to add and remove,
    and a #/w/ share URL that doubles as the backup.
-2. Portfolio values: optional quantity per holding, value and total computed
-   client-side from prices already loaded; a "My list" strip under the chart
-   fed by summary.json.
+2. Portfolio values (v2.1): optional quantity per holding set from the star
+   card; a "My lists" strip under the chart prices every list from
+   summary.json (price and price_prev), with per-currency totals and a day
+   change.
 3. Universe growth for the tail people actually hold: FTSE 250, rest of the
    S&P 500, wider ETF set - plus a "not listed? request it" link from an
    empty picker search (prefilled GitHub issue). Costs run time and
@@ -660,3 +661,17 @@ rewrite) and on-demand fetching of arbitrary tickers (which would trade
 the whole static architecture for the long tail - the universe grows by
 curation and request instead). The parked personal-contracts idea changes
 nothing here: if it happens it is a separate product consuming /data.
+
+### 2026-08-24 - Portfolio totals are per currency, and GBX/100 is not FX
+Quantities (v2.1) are optional per holding, entered on the star card, and
+the "My lists" panel prices everything from summary.json alone - price and
+the new price_prev - so the front screen values a portfolio without
+fetching any history. Totals are per currency ("£7,064 + $6,187") because
+converting dollars to pounds needs an FX source and a daily failure mode,
+which this project has already rejected twice; pence to pounds is a unit
+change, not a conversion, so GBX holdings divide by 100 into the sterling
+total. The day-change figure is coloured only when every currency agrees
+on direction - summing pounds and dollars to pick green or red would be
+FX by the back door. Share URLs carry quantities (#/w/name/id:qty,...):
+the URL is the only backup, and a backup that drops holdings defeats it -
+the card copy says so, for anyone sharing rather than backing up.

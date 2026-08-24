@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -467,8 +467,18 @@ function loadWatchlists() {
   try {
     const saved = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "null");
     if (saved && saved.version === 1 && Array.isArray(saved.lists)) {
-      return saved.lists.filter((l) =>
-        l && typeof l.name === "string" && Array.isArray(l.ids));
+      return saved.lists
+        .filter((l) => l && typeof l.name === "string" && Array.isArray(l.ids))
+        .map((l) => {
+          // quantities are optional and arrived in v2.1 - older blobs have
+          // none, and anything that is not a positive number is dropped
+          const qty = {};
+          for (const [id, q] of Object.entries(l.qty || {})) {
+            const n = Number(q);
+            if (Number.isFinite(n) && n > 0) qty[id] = n;
+          }
+          return { name: l.name, ids: l.ids, qty };
+        });
     }
   } catch { /* a corrupt blob is not worth breaking the site over */ }
   return [];
@@ -485,10 +495,14 @@ function onAnyList(id) {
   return state.watchlists.some((l) => l.ids.includes(id));
 }
 
+/* The URL is the only backup, so it carries quantities too - a backup that
+   dropped your holdings would defeat the point. The card copy says so, for
+   anyone sharing a list rather than backing one up. */
 function shareUrl(list) {
   return location.origin + location.pathname +
     "#/w/" + encodeURIComponent(list.name) + "/" +
-    list.ids.map(encodeURIComponent).join(",");
+    list.ids.map((id) =>
+      encodeURIComponent(id) + (list.qty[id] ? ":" + list.qty[id] : "")).join(",");
 }
 
 /* "My lists" sits above the regions in the picker, same accordion, built
@@ -532,6 +546,11 @@ function renderListPopover(inst) {
         ${esc(l.name)} <span class="pick-count">${l.ids.length}</span>
       </label>
       <span class="lp-actions">
+        ${l.ids.includes(inst.id) ? `
+        <input class="lp-qty" type="number" min="0" step="any" inputmode="decimal"
+               placeholder="qty" value="${l.qty[inst.id] ?? ""}" data-idx="${idx}"
+               aria-label="Quantity held in ${esc(l.name)}"
+               title="Optional: how many you hold - gives the list a value">` : ""}
         <button class="lp-share" data-idx="${idx}"
                 title="Copy a link that opens or restores this list">Copy link</button>
         <button class="lp-del" data-idx="${idx}" aria-label="Delete ${esc(l.name)}"
@@ -540,21 +559,34 @@ function renderListPopover(inst) {
     </div>`).join("");
   pop.innerHTML = `
     <div class="lp-head"><strong>Watchlists</strong>
-      <span class="lp-note">saved in this browser only - Copy link to back up or share</span>
+      <span class="lp-note">saved in this browser only - Copy link to back up or share
+        (the link includes quantities)</span>
     </div>
     ${rows || '<p class="lp-empty">No lists yet.</p>'}
     <button class="lp-new">+ New list</button>`;
+
+  pop.querySelectorAll(".lp-qty").forEach((inp) =>
+    inp.addEventListener("change", () => {
+      const l = state.watchlists[Number(inp.dataset.idx)];
+      if (!l) return;
+      const n = Number(inp.value);
+      if (Number.isFinite(n) && n > 0) l.qty[inst.id] = n;
+      else delete l.qty[inst.id];
+      saveWatchlists();
+      renderMyLists();
+    }));
 
   pop.querySelectorAll("input[type=checkbox]").forEach((box) =>
     box.addEventListener("change", () => {
       const l = state.watchlists[Number(box.dataset.idx)];
       if (!l) return;
       if (box.checked) { if (!l.ids.includes(inst.id)) l.ids.push(inst.id); }
-      else l.ids = l.ids.filter((id) => id !== inst.id);
+      else { l.ids = l.ids.filter((id) => id !== inst.id); delete l.qty[inst.id]; }
       saveWatchlists();
       refreshStar(inst);
       rebuildPicker(inst);
       renderListPopover(inst);
+      renderMyLists();
     }));
   pop.querySelectorAll(".lp-share").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -575,16 +607,158 @@ function renderListPopover(inst) {
       refreshStar(inst);
       rebuildPicker(inst);
       renderListPopover(inst);
+      renderMyLists();
     }));
   pop.querySelector(".lp-new").addEventListener("click", () => {
     const name = (prompt("Name the new list:", "My watchlist") || "")
       .trim().slice(0, MAX_LIST_NAME);
     if (!name) return;
-    state.watchlists.push({ name, ids: [inst.id] });
+    state.watchlists.push({ name, ids: [inst.id], qty: {} });
     saveWatchlists();
     refreshStar(inst);
     rebuildPicker(inst);
     renderListPopover(inst);
+    renderMyLists();
+  });
+}
+
+/* ---------- portfolio values ----------
+
+   Everything here prices off summary.json alone - latest close and previous
+   close per instrument - so the front screen values a portfolio without
+   fetching a single series. Money stays in the instrument's own currency:
+   GBX is a unit, not a currency, so pence holdings divide by 100 into the
+   sterling total, but dollars are never converted - an FX source is a
+   second data dependency and a daily failure mode this dashboard has
+   already rejected twice. Totals are therefore per currency. */
+
+function holdingCurrency(inst) {
+  if (inst.currency === "GBX" || inst.currency === "GBP") return "£";
+  if (inst.currency === "USD") return "$";
+  return "";
+}
+
+function holdingUnitPrice(inst, price) {
+  return inst.currency === "GBX" ? price / 100 : price;
+}
+
+function fmtMoney(cur, v) {
+  const abs = Math.abs(v);
+  const dp = abs >= 100 ? 0 : 2;
+  return (v < 0 ? "-" : "") + cur +
+    abs.toLocaleString("en-GB", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+}
+
+function fmtTotals(totals, signed) {
+  const parts = Object.entries(totals)
+    .filter(([, v]) => v !== 0 || !signed)
+    .map(([cur, v]) => (signed && v > 0 ? "+" : "") + fmtMoney(cur, v));
+  // "+" reads naturally between plain sums; signed day changes get a dot,
+  // or "£12 + -$5" happens
+  return parts.join(signed ? " · " : " + ");
+}
+
+/* Green only when every currency is up, red only when every one is down -
+   summing pounds and dollars to pick a colour would be FX by the back door. */
+function dayClass(dayTotals) {
+  const vs = Object.values(dayTotals);
+  if (vs.every((v) => v >= 0)) return "up";
+  if (vs.every((v) => v <= 0)) return "down";
+  return "";
+}
+
+/* One list, priced: rows for every member, and per-currency totals over the
+   ones that have a quantity. Day change is qty x (last - previous close). */
+function listValues(l) {
+  const byId = new Map(state.meta.instruments.map((i) => [i.id, i]));
+  const rows = [], totals = {}, dayTotals = {};
+  for (const id of l.ids) {
+    const inst = byId.get(id);
+    if (!inst) continue;
+    const s = summaryRow(id);
+    const qty = l.qty[id];
+    const row = { inst, qty: qty || null, value: null, cur: "", change: null, changePct: null };
+    if (qty && s.price != null) {
+      row.cur = holdingCurrency(inst);
+      row.value = qty * holdingUnitPrice(inst, s.price);
+      totals[row.cur] = (totals[row.cur] || 0) + row.value;
+      if (s.price_prev) {
+        row.change = qty * holdingUnitPrice(inst, s.price - s.price_prev);
+        row.changePct = (s.price / s.price_prev - 1) * 100;
+        dayTotals[row.cur] = (dayTotals[row.cur] || 0) + row.change;
+      }
+    }
+    rows.push(row);
+  }
+  return { rows, totals, dayTotals };
+}
+
+function myListsMarkup() {
+  if (!state.watchlists.length) return "";
+  const valued = state.watchlists.map((l) => ({ list: l, ...listValues(l) }));
+  const pills = valued.map(({ list, totals }) => `
+    <span class="strip-item mylist-pill">
+      <span class="strip-name">${esc(list.name)}</span>
+      ${Object.keys(totals).length ? `<span class="mylist-total">${fmtTotals(totals)}</span>` : ""}
+    </span>`).join("");
+  const sections = valued.map(({ list, rows, totals, dayTotals }) => `
+    <div class="strip-section">
+      <h3>${esc(list.name)}
+        ${Object.keys(totals).length ? `<span class="mylist-total">${fmtTotals(totals)}</span>` : ""}
+        ${Object.keys(dayTotals).length ? `<span class="mylist-day ${dayClass(dayTotals)}">today ${fmtTotals(dayTotals, true)}</span>` : ""}
+      </h3>
+      <table class="mylist-table">
+        <thead><tr><th>Instrument</th><th>Qty</th><th>Value</th><th>Today</th></tr></thead>
+        <tbody>
+        ${rows.map((r) => `
+          <tr>
+            <td><a href="#/i/${encodeURIComponent(r.inst.id)}">${r.inst.name}</a></td>
+            <td>${r.qty ?? "-"}</td>
+            <td>${r.value != null ? fmtMoney(r.cur, r.value) : "-"}</td>
+            <td class="${r.change == null ? "" : r.change >= 0 ? "up" : "down"}">${
+              r.change != null
+                ? `${r.change >= 0 ? "+" : ""}${fmtMoney(r.cur, r.change)} (${r.changePct >= 0 ? "+" : ""}${r.changePct.toFixed(1)}%)`
+                : "-"}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`).join("");
+  const anyQty = valued.some(({ totals }) => Object.keys(totals).length);
+  return `
+    <div class="strip">
+      <button class="strip-toggle" id="mylists-toggle" aria-expanded="false"
+              title="Your lists, valued from the latest close">
+        My lists <span class="strip-chevron" aria-hidden="true">&#9662;</span>
+      </button>
+      ${pills}
+    </div>
+    <div class="strip-expanded" id="mylists-expanded" hidden>
+      ${sections}
+      ${anyQty ? "" : `<p class="mylist-hint">Set a quantity from the ☆ card on an
+        instrument's chart and the list gains a value and a day change.</p>`}
+    </div>`;
+}
+
+/* Rendered into its own container so the star card can refresh it in place
+   after a quantity or membership change, keeping the open/closed state. */
+function renderMyLists() {
+  const box = document.getElementById("mylists");
+  if (!box) return;
+  const panel = document.getElementById("mylists-expanded");
+  const wasOpen = panel ? !panel.hidden : false;
+  box.innerHTML = myListsMarkup();
+  const toggle = document.getElementById("mylists-toggle");
+  const fresh = document.getElementById("mylists-expanded");
+  if (!toggle || !fresh) return;
+  if (wasOpen) {
+    fresh.hidden = false;
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.classList.add("open");
+  }
+  toggle.addEventListener("click", () => {
+    fresh.hidden = !fresh.hidden;
+    toggle.setAttribute("aria-expanded", fresh.hidden ? "false" : "true");
+    toggle.classList.toggle("open", !fresh.hidden);
   });
 }
 
@@ -794,6 +968,7 @@ async function renderDetail(id, token) {
       <p class="marker-key" id="marker-key" hidden></p>
       <div class="event-card" id="event-card" hidden></div>
       ${stripMarkup(inst.id)}
+      <div id="mylists"></div>
       <p class="panel-note">${inst.type === "commodity"
         ? "Net position of non-commercial (speculative) traders, weekly CFTC data. The percentile shows how stretched positioning is against its own 5-year history."
         : inst.type === "etf"
@@ -805,6 +980,7 @@ async function renderDetail(id, token) {
   wirePicker();
   wireStrip();
   wireStar(inst);
+  renderMyLists();
 
   const chartEl = document.getElementById("chart");
   state.chart = echarts.init(chartEl);
@@ -1139,15 +1315,27 @@ async function route() {
     const slash = rest.indexOf("/");
     const name = (decodeURIComponent(slash < 0 ? rest : rest.slice(0, slash)) || "Shared list")
       .slice(0, MAX_LIST_NAME);
-    const ids = slash < 0 ? [] : rest.slice(slash + 1).split(",").map(decodeURIComponent);
+    // each token is <encoded id>[:qty] - split before decoding, so a colon
+    // inside an id (percent-encoded) can never masquerade as the separator
+    const pairs = slash < 0 ? [] : rest.slice(slash + 1).split(",").map((tok) => {
+      const [rawId, rawQty] = tok.split(":");
+      return { id: decodeURIComponent(rawId), qty: Number(rawQty) };
+    });
     const known = new Set(state.meta.instruments.map((i) => i.id));
-    const good = [...new Set(ids)].filter((id) => known.has(id));
+    const seen = new Set();
+    const good = [], qty = {};
+    for (const p of pairs) {
+      if (!known.has(p.id) || seen.has(p.id)) continue;
+      seen.add(p.id);
+      good.push(p.id);
+      if (Number.isFinite(p.qty) && p.qty > 0) qty[p.id] = p.qty;
+    }
     if (good.length) {
-      const dropped = new Set(ids).size - good.length;
+      const dropped = new Set(pairs.map((p) => p.id)).size - good.length;
       const already = state.watchlists.some(
         (l) => l.name === name && l.ids.join() === good.join());
-      if (!already && confirm(`Save the watchlist "${name}" (${good.length} instrument${good.length === 1 ? "" : "s"}${dropped ? `; ${dropped} not on this site` : ""}) to this browser?`)) {
-        state.watchlists.push({ name, ids: good });
+      if (!already && confirm(`Save the watchlist "${name}" (${good.length} instrument${good.length === 1 ? "" : "s"}${Object.keys(qty).length ? ", with quantities" : ""}${dropped ? `; ${dropped} not on this site` : ""}) to this browser?`)) {
+        state.watchlists.push({ name, ids: good, qty });
         saveWatchlists();
       }
       location.hash = "#/i/" + encodeURIComponent(good[0]);

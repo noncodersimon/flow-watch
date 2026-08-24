@@ -378,6 +378,16 @@ class SummaryTest(unittest.TestCase):
                     self.assertEqual(row[metric], points[-1][1],
                                      "summary is stale against the series")
 
+    def test_previous_close_matches_the_series(self):
+        for iid, row in self.summary["instruments"].items():
+            if "price_prev" not in row:
+                continue
+            points = (self.docs.get(iid, {"metrics": {}})["metrics"].get("price")) or []
+            with self.subTest(instrument=iid):
+                self.assertGreaterEqual(len(points), 2,
+                                        f"{iid} has price_prev but under two price points")
+                self.assertEqual(row["price_prev"], points[-2][1])
+
     def test_weekly_ratio_is_sane_where_present(self):
         for iid, row in self.summary["instruments"].items():
             if "volume_ratio_week" in row:
