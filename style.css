@@ -350,9 +350,10 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   border-radius: var(--radius);
 }
 
-/* "Unusual today" - the screener's ranking folded under the chart. A single
-   horizontally scrolling row: enough to answer "where is the activity",
-   never a second destination. */
+/* "Unusual today" and "Unusual this week" - the screener's rankings folded
+   under the chart. One horizontally scrolling row each, top ten, with the
+   top twenty behind each row's own toggle: enough to answer "where is the
+   activity", never a second destination. */
 .strip {
   display: flex;
   align-items: center;
@@ -393,6 +394,7 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   padding: 0.6rem 0.8rem 0.8rem;
   margin-top: 0.5rem;
 }
+.strip-expanded h3,
 .strip-section h3 {
   font-family: var(--font-display);
   font-size: 0.72rem;
@@ -402,6 +404,8 @@ main { max-width: var(--max-width); margin: 0 auto; padding: 1rem; }
   color: var(--text-muted);
   margin: 0.5rem 0 0.4rem;
 }
+/* a ranking panel holds one heading, so it opens flush with the panel top */
+.strip-expanded > h3:first-child { margin-top: 0; }
 .strip-note {
   text-transform: none;
   letter-spacing: 0;
