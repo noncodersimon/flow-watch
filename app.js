@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.8";
+const APP_VERSION = "2.9";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -173,21 +173,43 @@ function recentEventCount(id) {
   return DIRECTIONAL_KINDS.reduce((n, k) => n + (counts[k] || 0), 0);
 }
 
-/* ---------- "unusual today" strip ----------
+/* ---------- "unusual" strips ----------
 
-   What remains of the screener page, folded under the chart: the top few
+   What remains of the screener page, folded under the chart: the top ten
    instruments by volume against their own 20-day average, from summary.json,
-   each one a link to its chart. It answers "where is the unusual activity
-   today" without being a second destination - the ranking finds the chart,
-   the chart tells the story. */
+   each one a link to its chart. Two rankings, today and the week, each its
+   own scrolling row with its own toggle out to a top twenty. It answers
+   "where is the unusual activity" without being a second destination - the
+   ranking finds the chart, the chart tells the story. */
 
 function defaultInstrumentId() {
   const has = (id) => state.meta.instruments.some((i) => i.id === id);
   return has(DEFAULT_INSTRUMENT) ? DEFAULT_INSTRUMENT : state.meta.instruments[0].id;
 }
 
-const STRIP_SIZE = 5;
+const STRIP_SIZE = 10;
 const EXPANDED_SIZE = 20;
+
+/* The two rankings the strip offers. Today answers "what is busy right now";
+   the week is the same ratio averaged over the last five sessions, so one
+   quiet Friday cannot hide a busy week. Each is its own row with its own
+   toggle - expanding the week should not push the day's ranking around. */
+const STRIP_VIEWS = [
+  {
+    key: "today",
+    field: "volume_ratio",
+    label: "Unusual today",
+    title: "Volume vs own 20-day average. Activity, not net buying.",
+    note: "volume vs 20-day average",
+  },
+  {
+    key: "week",
+    field: "volume_ratio_week",
+    label: "Unusual this week",
+    title: "Volume vs own 20-day average, averaged over the last 5 sessions. Activity, not net buying.",
+    note: "volume vs 20-day average, averaged over the last 5 sessions",
+  },
+];
 
 function rankedByRatio(field, n) {
   return Object.entries(state.summary.instruments || {})
@@ -211,38 +233,40 @@ function stripItems(rows, currentId) {
       </a>`).join("");
 }
 
-function stripMarkup(currentId) {
-  const today = rankedByRatio("volume_ratio", STRIP_SIZE);
-  if (today.length < 2) return "";
+/* One ranking: a scrolling row of the top ten, and a panel of the top twenty
+   behind its own toggle. Returns "" when the ranking has too little in it to
+   be a ranking at all - a strip of one instrument ranks nothing. */
+function stripBlock(view, currentId) {
+  const top = rankedByRatio(view.field, STRIP_SIZE);
+  if (top.length < 2) return "";
   return `
     <div class="strip">
-      <button class="strip-toggle" id="strip-toggle" aria-expanded="false"
-              title="Volume vs own 20-day average. Activity, not net buying.">
-        Unusual today <span class="strip-chevron" aria-hidden="true">&#9662;</span>
+      <button class="strip-toggle" data-strip="${view.key}" aria-expanded="false"
+              aria-controls="strip-expanded-${view.key}" title="${view.title}">
+        ${view.label} <span class="strip-chevron" aria-hidden="true">&#9662;</span>
       </button>
-      ${stripItems(today, currentId)}
+      ${stripItems(top, currentId)}
     </div>
-    <div class="strip-expanded" id="strip-expanded" hidden>
-      <div class="strip-section">
-        <h3>Top ${EXPANDED_SIZE} today</h3>
-        <div class="strip-grid">${stripItems(rankedByRatio("volume_ratio", EXPANDED_SIZE), currentId)}</div>
-      </div>
-      <div class="strip-section">
-        <h3>Top ${EXPANDED_SIZE} this week
-          <span class="strip-note">volume vs 20-day average, averaged over the last 5 sessions</span></h3>
-        <div class="strip-grid">${stripItems(rankedByRatio("volume_ratio_week", EXPANDED_SIZE), currentId)}</div>
-      </div>
+    <div class="strip-expanded" id="strip-expanded-${view.key}" hidden>
+      <h3>Top ${EXPANDED_SIZE} ${view.key === "week" ? "this week" : "today"}
+        <span class="strip-note">${view.note}</span></h3>
+      <div class="strip-grid">${stripItems(rankedByRatio(view.field, EXPANDED_SIZE), currentId)}</div>
     </div>`;
 }
 
+function stripMarkup(currentId) {
+  return STRIP_VIEWS.map((v) => stripBlock(v, currentId)).join("");
+}
+
 function wireStrip() {
-  const toggle = document.getElementById("strip-toggle");
-  const panel = document.getElementById("strip-expanded");
-  if (!toggle || !panel) return;
-  toggle.addEventListener("click", () => {
-    panel.hidden = !panel.hidden;
-    toggle.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
-    toggle.classList.toggle("open", !panel.hidden);
+  document.querySelectorAll(".strip-toggle[data-strip]").forEach((toggle) => {
+    const panel = document.getElementById("strip-expanded-" + toggle.dataset.strip);
+    if (!panel) return;
+    toggle.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
+      toggle.classList.toggle("open", !panel.hidden);
+    });
   });
 }
 

@@ -178,7 +178,7 @@ is still checked by py_compile in check.sh, just not as a unit test. If
 common.py starts changing often the merge_series tests are worth restoring -
 they are in git history at commit d904319.
 
-## Current state (Aug 2026, v2.8)
+## Current state (Aug 2026, v2.9)
 
 The universe is the FTSE 350 (100 + 250), the S&P 500 (minus GOOG, FOX and
 NWS - same-company share classes, see the decision log), 82 LSE-listed
@@ -189,9 +189,10 @@ relabelled to what Yahoo serves - three FTSE 250 trusts genuinely quote
 in dollars) and one Form 4 date-format quirk (PTC), both fixed. The
 daily fetch takes about three hours, dominated by Investegate pacing
 over 350 UK names; its commit step rebases onto main so code pushed
-mid-run cannot lose the data. Front end v2.8: watchlists with quantities
+mid-run cannot lose the data. Front end v2.9: watchlists with quantities
 and per-currency portfolio values, type filter, request-an-instrument
-link, remembered 6M range.
+link, remembered 6M range, and separate "Unusual today" and "Unusual this
+week" strips that each expand to their own top 20.
 
 Live: price/volume/ratio (Yahoo via yfinance), COT (CFTC Socrata), ETF flows
 (yfinance shares-outstanding method - LSE listings may need days of samples
@@ -715,3 +716,17 @@ with three flagships (Fundsmith Equity, LifeStrategy 60 and 80); the rest
 arrive by request like the equity tail. informed_money and etf_flows
 select by type and never see them; price_volume_yahoo fetches their NAV
 but refuses to store Yahoo's zero-padded fund "volume".
+
+### 2026-08-25 - The week ranking is its own strip, not a half of one panel
+Supersedes the 2026-08-23 entry that put both top-20 lists behind the single
+"Unusual today" toggle. The week was doing the harder job - one quiet session
+cannot hide a busy week - and it was invisible until you opened a panel
+labelled with the other timeframe. There are now two rows, "Unusual today"
+and "Unusual this week", ten pills each, and each toggles out its own top 20
+so opening the week does not shove the day's ranking down the page. The rows
+are built from a STRIP_VIEWS list rather than duplicated markup, so a third
+ranking is one entry. Rejected: interleaving the two into one row (the
+ordering would mean nothing), and showing only places 11-20 in the expanded
+panel, which saves a little height at the cost of a list that cannot be read
+as a ranking on its own. Nothing changed in /data - build_summary.py already
+writes volume_ratio_week.
