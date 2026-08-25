@@ -8136,6 +8136,24 @@
    "sector": "Funds",
    "currency": "GBP",
    "yahoo": "0P0000TKZM.L"
+  },
+  {
+   "id": "SKHY",
+   "name": "SK Hynix (US line)",
+   "type": "equity",
+   "region": "Asia",
+   "sector": "Technology",
+   "currency": "USD",
+   "yahoo": "SKHY"
+  },
+  {
+   "id": "ARTGI.FUND",
+   "name": "Artemis Global Income (I Acc)",
+   "type": "fund",
+   "region": "UK",
+   "sector": "Funds",
+   "currency": "GBP",
+   "yahoo": "0P0000W36K.L"
   }
  ]
 }

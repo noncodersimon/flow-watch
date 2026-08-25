@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "2.9";
+const APP_VERSION = "3.0";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -824,6 +824,17 @@ function wireStar(inst) {
   });
 }
 
+/* Insider coverage exists only where a regulator publishes it AND an adapter
+   reads it: UK equities through Investegate RNS, US equities through SEC
+   Form 4, which needs a CIK. Anything else - a Korean company's New York
+   line, say - can never carry a marker, so the note says so rather than
+   letting an empty chart imply a quiet boardroom. Mirrors the selection in
+   informed_money.py and sec_form4.py. */
+function hasInsiderSource(inst) {
+  return inst.type === "equity" &&
+    (inst.region === "UK" || (inst.region === "US" && Boolean(inst.cik)));
+}
+
 /* The benchmark is just another instrument already in the store - meta.json
    maps region to one, and an instrument may override it. Nothing benchmarks
    against itself. */
@@ -993,7 +1004,13 @@ function wirePicker() {
       const title = encodeURIComponent(`Instrument request: ${input.value.trim()}`);
       const body = encodeURIComponent(
         `Please add "${input.value.trim()}" to the flow-watch universe.\n\n` +
-        `Name and exchange (if you know them):\n`);
+        `Ticker and exchange (if you know them):\n\n\n` +
+        `---\n` +
+        `What can be added: anything quoted in sterling (pence or pounds) or\n` +
+        `US dollars with a Yahoo Finance listing - shares, ETFs, investment\n` +
+        `trusts and UK funds. Other currencies cannot be displayed yet, so a\n` +
+        `foreign company is added through its London or New York line where\n` +
+        `one exists. One listing per company.\n`);
       req.href = `https://github.com/noncodersimon/flow-watch/issues/new?title=${title}&body=${body}`;
     }
   }
@@ -1090,6 +1107,8 @@ async function renderDetail(id, token) {
         : inst.type === "etf"
         ? "Net flow = daily change in shares outstanding x price - actual creation/redemption of units, estimated from Yahoo data. The line is cumulative flow over the selected range."
         : "Volume bars are coloured by the day's price direction - suggestive of pressure, not a true buy/sell split."}
+      ${inst.type === "equity" && !hasInsiderSource(inst)
+        ? "No insider filings are published for this listing, so the chart never shows director dealings - that is coverage, not a quiet boardroom." : ""}
       Tap the chart to switch the hover box between date-only and full values.</p>
     </div>`;
 
