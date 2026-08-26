@@ -4,7 +4,7 @@
    style.css URLs, so a returning browser cannot serve a stale script against
    fresh data - there is no build step here to fingerprint assets for us.
    tests/test_data_store.py enforces that the two stay in step. */
-const APP_VERSION = "3.0";
+const APP_VERSION = "3.1";
 
 /* Event kinds written by adapters/informed_money.py.
    pdmr_award covers option exercises, vests and nil-cost awards, including a
@@ -1032,10 +1032,23 @@ function wirePicker() {
     const first = items.find((a) => !a.hidden);
     if (first) first.click();
   });
-  // Focus the box when the picker opens, but not on a phone - there the
-  // keyboard would cover the list it is meant to help you read.
+  /* Opening the picker puts the cursor in the search box, on every width.
+     At 942 instruments search is the ordinary way in and browsing the
+     region tree is the exception, so the tap saved is worth the keyboard
+     covering the list until it is dismissed - which supersedes the earlier
+     phone carve-out. The focus happens inside the tap rather than on the
+     toggle event that follows it, because iOS only raises the keyboard for
+     a focus it can attribute to a gesture. */
+  const summary = picker.querySelector(":scope > summary");
+  if (summary) {
+    summary.addEventListener("click", (e) => {
+      if (picker.open) return;   // closing - let the default toggle run
+      e.preventDefault();
+      picker.open = true;
+      input.focus();
+    });
+  }
   picker.addEventListener("toggle", () => {
-    if (picker.open && window.matchMedia("(min-width: 641px)").matches) input.focus();
     if (!picker.open) { input.value = ""; apply(); }
   });
 
