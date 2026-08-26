@@ -2,7 +2,15 @@ name: Fetch market data
 
 on:
   schedule:
-    - cron: "30 6 * * 1-6"   # 06:30 UTC Mon-Sat (Sat catches Friday US close + weekly COT)
+    # 22:00 UTC Mon-Fri, which is after both closes whatever the season -
+    # the LSE at 15:30 UTC and New York at 20:00 UTC in summer, an hour
+    # later each in winter. The run takes about three hours, so the day's
+    # own closes land overnight and a UK morning opens on yesterday's
+    # session rather than the one before it. A morning run could only ever
+    # carry the previous day. Friday evening also catches the weekly COT,
+    # published 15:30 New York time, so no Saturday run is needed.
+    # GitHub queues cron runs late by up to an hour; later only helps here.
+    - cron: "0 22 * * 1-5"
   workflow_dispatch: {}       # manual "Run workflow" button
 
 permissions:

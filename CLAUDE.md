@@ -6,7 +6,7 @@ UK lens by default, global available. Owner: Simon (noncodersimon).
 ## Architecture - do not change without discussion
 
 - No server, no build step, no npm. GitHub Actions (.github/workflows/fetch.yml,
-  06:30 UTC Mon-Sat) runs Python adapters that fetch data, compute derived daily
+  22:00 UTC Mon-Fri) runs Python adapters that fetch data, compute derived daily
   figures, and commit JSON to /data. GitHub Pages serves the static front end
   (index.html, app.js, style.css at repo root) which reads that JSON.
 - Store shape: one JSON file per INSTRUMENT, data/instruments/<id>.json -
@@ -784,3 +784,22 @@ second data source and a daily failure mode, rejected three times now for
 the same reason), and auto-adding requests from a script (the three live
 requests included one company with three plausible tickers in three
 currencies and one duplicate - exactly the judgement a script fakes).
+
+### 2026-08-26 - The fetch runs in the evening, not the morning
+Moved from 06:30 UTC Mon-Sat to 22:00 UTC Mon-Fri. Both schedules capture
+complete sessions - the point is which one. A 06:30 run starts before the
+London open and commits around 10:15, so a UK user checking at breakfast
+was reading data assembled the previous morning, one whole session behind.
+Running after New York closes (20:00 UTC in summer, 21:00 in winter) puts
+the same day's UK and US closes in the store overnight, so the morning
+opens on yesterday's session and "unusual today" means today. Friday
+evening also catches the weekly COT, published 15:30 New York time, which
+is what the Saturday run existed for, so Saturday goes.
+
+Two things make the evening safe. Both markets are shut by 22:00, so no
+partial bar can be captured - the reason the timing has to be after the
+later close rather than merely late. And merge_series lets the newest
+value win on a date it already holds, so even a provisional figure would
+be corrected by the next run rather than fossilised. Rejected: keeping the
+morning run as well, which would double 350 UK names through Investegate's
+politeness pacing for a few hours of freshness nobody is awake for.
