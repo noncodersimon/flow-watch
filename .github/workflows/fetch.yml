@@ -2,7 +2,7 @@ name: Fetch market data
 
 on:
   schedule:
-    # 22:00 UTC Mon-Fri, which is after both closes whatever the season -
+    # Evening, Mon-Fri, after both closes whatever the season -
     # the LSE at 15:30 UTC and New York at 20:00 UTC in summer, an hour
     # later each in winter. The run takes about three hours, so the day's
     # own closes land overnight and a UK morning opens on yesterday's
