@@ -26,6 +26,7 @@ Honest caveats, so the numbers are never over-read:
     per-instrument and non-fatal.
 """
 
+import math
 import sys
 from datetime import date, timedelta
 
@@ -63,13 +64,27 @@ def daily_shares(ticker):
 
 
 def close_prices(ticker):
-    """Return {date: close}."""
+    """Return {date: close}, skipping any day Yahoo could not price.
+
+    Yahoo pads a day a thin line did not trade with a NaN close, and one of
+    those turns every flow computed against it into NaN - which is not even
+    valid JSON, so it breaks the front end rather than showing a gap.
+    price_volume_yahoo.frame_to_series has guarded this from the start;
+    this adapter had not.
+    """
     try:
         hist = ticker.history(period=f"{HISTORY_YEARS}y", auto_adjust=False)
-        return {ts.date().isoformat(): float(c) for ts, c in hist["Close"].items()}
     except Exception as e:  # noqa: BLE001
         print(f"  history failed: {e}", file=sys.stderr)
         return {}
+    out = {}
+    for ts, c in hist["Close"].items():
+        if c is None:
+            continue
+        value = float(c)
+        if math.isfinite(value):
+            out[ts.date().isoformat()] = value
+    return out
 
 
 def price_on_or_before(closes_sorted, d):
@@ -113,7 +128,9 @@ def main():
         flows, pcts = [], []
         for (d_prev, s_prev), (d, s) in zip(merged, merged[1:]):
             px = price_on_or_before(closes, d)
-            if px is None or s <= 0:
+            # px > 0 rather than merely present: a zero close would divide
+            # by zero on the AUM line below
+            if px is None or not math.isfinite(px) or px <= 0 or s <= 0:
                 continue
             flow = (s - s_prev) * px * scale
             aum = s * px * scale

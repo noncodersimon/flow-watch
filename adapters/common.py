@@ -26,6 +26,7 @@ assembled underneath.
 """
 
 import json
+import math
 import os
 from datetime import date, timedelta
 
@@ -79,7 +80,7 @@ def _write_docs():
             continue
         doc["updated"] = today
         with open(_doc_path(instrument_id), "w") as f:
-            json.dump(doc, f, separators=(",", ":"))
+            json.dump(doc, f, separators=(",", ":"), allow_nan=False)
         written += 1
     return written
 
@@ -99,10 +100,25 @@ def load_store(metric):
     return {"updated": None, "series": series}
 
 
+def _storable(value):
+    """True for a number JSON can actually represent."""
+    if value is None:
+        return False
+    if isinstance(value, float) and not math.isfinite(value):
+        return False
+    return True
+
+
 def merge_series(store, instrument_id, new_points):
-    """Merge [[date, value], ...] into a store, newest values winning."""
+    """Merge [[date, value], ...] into a store, newest values winning.
+
+    Non-finite values are dropped rather than stored. NaN and infinity have
+    no JSON representation, so json.dump writes them as bare literals that
+    every strict parser - the browser's included - rejects, taking the whole
+    file down rather than the one point. A missing point is an honest gap.
+    """
     existing = dict(store["series"].get(instrument_id, []))
-    existing.update({d: v for d, v in new_points if v is not None})
+    existing.update({d: v for d, v in new_points if _storable(v)})
     merged = sorted(existing.items())[-MAX_POINTS:]
     store["series"][instrument_id] = [[d, v] for d, v in merged]
 
@@ -204,6 +220,8 @@ def build_summary():
         for metric in SUMMARY_METRICS:
             points = doc["metrics"].get(metric)
             if points:
+                if not _storable(points[-1][1]):
+                    continue      # an adapter that wrote around merge_series
                 row[metric] = points[-1][1]
                 if metric == "price":
                     row["date"] = points[-1][0]
@@ -232,6 +250,6 @@ def build_summary():
 def save_summary():
     summary = build_summary()
     with open(os.path.join(DATA_DIR, "summary.json"), "w") as f:
-        json.dump(summary, f, separators=(",", ":"))
+        json.dump(summary, f, separators=(",", ":"), allow_nan=False)
     print(f"wrote summary.json ({len(summary['instruments'])} instruments)")
     return summary

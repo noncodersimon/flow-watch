@@ -191,6 +191,35 @@ class MetaTest(unittest.TestCase):
                     self.assertEqual(inst["currency"], "GBX")
 
 
+class StrictJsonTest(unittest.TestCase):
+    """Every committed file must be JSON a browser will actually parse.
+
+    Python writes NaN and Infinity as bare literals, which no strict parser
+    accepts - so one NaN from a source does not cost one point, it costs the
+    whole file. That is how a single unpriced day at Yahoo took summary.json
+    down on 2026-08-27: the front end fell back to an empty digest and lost
+    the strips and the portfolio values. The adapters now drop non-finite
+    values, and this is the tripwire if a path around them ever appears.
+    """
+
+    def test_every_data_file_is_strict_json(self):
+        def strict(name):
+            raise ValueError(f"non-finite literal {name!r}")
+
+        for root, _dirs, names in os.walk(DATA_DIR):
+            for name in sorted(names):
+                if not name.endswith(".json"):
+                    continue
+                path = os.path.join(root, name)
+                with self.subTest(file=os.path.relpath(path, DATA_DIR)):
+                    with open(path, encoding="utf-8") as f:
+                        raw = f.read()
+                    try:
+                        json.loads(raw, parse_constant=strict)
+                    except ValueError as e:
+                        self.fail(f"{name} is not valid JSON: {e}")
+
+
 class SeriesStoreTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
