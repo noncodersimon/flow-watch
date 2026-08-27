@@ -9,8 +9,12 @@ on:
     # session rather than the one before it. A morning run could only ever
     # carry the previous day. Friday evening also catches the weekly COT,
     # published 15:30 New York time, so no Saturday run is needed.
-    # GitHub queues cron runs late by up to an hour; later only helps here.
-    - cron: "0 22 * * 1-5"
+    # Not on the hour: GitHub queues scheduled runs behind everyone else's,
+    # and the first 22:00 run was held five hours (started 03:01, ran its
+    # usual 2h36, committed 05:37 - it still made the morning, but with far
+    # less margin than intended). An odd minute away from the top of the
+    # hour is GitHub's own advice for that.
+    - cron: "41 21 * * 1-5"
   workflow_dispatch: {}       # manual "Run workflow" button
 
 permissions:
