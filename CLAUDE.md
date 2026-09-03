@@ -264,7 +264,9 @@ entirely user-entered private data, and it genuinely needs accounts, server
 storage and notifications. If pursued it becomes a separate app under the
 Digitelos umbrella that consumes this site's public /data as an API -
 flow-watch stays the market-data engine. Recorded here so the idea cannot
-quietly drag a backend into this codebase before demand proves it.
+quietly drag a backend into this codebase before demand proves it. The
+architecture and platform review for that separate product (3 September
+2026) lives in docs/household-os/ARCHITECTURE.md with its evidence beside it.
 
 ### 2026-08-22 - The web sandbox network constraint is superseded, but only partly
 The previous entry in Known constraints said every source host 403s at the
